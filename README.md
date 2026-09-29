@@ -11,19 +11,15 @@ Dua node sensor nirkabel yang dikenakan pada tubuh: satu di pergelangan tangan u
 
 | No | Nama | NIM | Peran |
 |---|---|---|---|
-| 1 | Yogi Prasetya Sadewa | 23210060 | Ketua kelompok; perangkat lunak penerima, perhitungan QoS, dan integrasi BLE/MQTT |
-| 2 | Asmarudin | 23210133 | Perakitan node 1 (ESP32 + MAX30102) dan kalibrasi pembacaan detak jantung |
-| 3 | Deski Taiza | 23210003 | Perakitan node 2 (ESP32 + MLX90614) dan pengujian pembacaan suhu tubuh |
-| 4 | Akhsanul Taqwim | 23210006 | Dashboard pemantauan dan visualisasi grafik secara langsung |
-| 5 | Wira | 23210045 | Pelaksanaan pengujian lapangan: variasi jarak, penghalang, dan interferensi |
-| 6 | Abadi | 23210004 | Pengujian daya tahan baterai dan pencatatan waktu pemakaian |
-| 7 | Ferdyan Ardhani | 23210039 | Pengolahan data hasil pengukuran menjadi tabel dan grafik laporan |
-| 8 | Muhammad Iqbal | 23210142 | Perbandingan hasil pengukuran dengan alat pembanding (oximeter dan termometer) |
-| 9 | Meriandi Wahyu Kurniawan | [NIM] | Dokumentasi, README, dan pengelolaan repository |
+| 1 | Paris Mursidan Aufal | 23210125 | Aplikasi server dan basis data penyimpanan data sensor |
+| 2 | Yogi Prasetya Sadewa | 23210060 | Ketua kelompok; perangkat lunak penerima, perhitungan QoS, dan integrasi BLE/MQTT |
+| 3 | M. Sidiq Prasetio | 23210075 | Aplikasi client (dashboard web) yang membaca data dari server |
+| 4 | Deski Taiza | 23210003 | Firmware Node 1 (BLE + MAX30102) dan kalibrasi pembacaan |
+| 5 | Wira | 23210045 | Firmware Node 2 (WiFi + MQTT + MLX90614) dan pengujian jarak |
+| 6 | T. Zain Wardana | 23210001 | Pengukuran QoS empat parameter dan penyusunan laporan pengujian |
 
-> Kelompok berjumlah 9 orang; panduan menetapkan 4–5 orang sehingga jumlah ini
-> dimintakan persetujuan dosen pada pertemuan ke-2. Setiap anggota melakukan
-> commit dari akun masing-masing.
+> Kelompok berjumlah 6 orang; setiap anggota mengerjakan satu bagian di tiap mata
+> kuliah dan melakukan commit dari akun GitHub masing-masing.
 
 ## Rencana Proyek
 
@@ -86,7 +82,7 @@ streamlit run src/dashboard/app.py
 ## Struktur Repository
 
 ```
-mkkl1029-health-monitor/
+wmc_2026_kelompok1_monitoring_kesehatan_nirkabel/
 ├── README.md
 ├── docs/
 │   ├── rencana-proyek.md

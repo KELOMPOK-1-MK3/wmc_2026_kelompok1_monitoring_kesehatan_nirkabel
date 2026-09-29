@@ -9,17 +9,14 @@
 
 ## 1. Identitas Kelompok
 
-| No | Nama | NIM | Peran dalam Proyek |
+| No | Nama | NIM | Peran |
 |---|---|---|---|
-| 1 | Yogi Prasetya Sadewa | 23210060 | Ketua kelompok; perangkat lunak penerima, perhitungan QoS, dan integrasi BLE/MQTT |
-| 2 | Asmarudin | 23210133 | Perakitan node 1 (ESP32 + MAX30102) dan kalibrasi pembacaan detak jantung |
-| 3 | Deski Taiza | 23210003 | Perakitan node 2 (ESP32 + MLX90614) dan pengujian pembacaan suhu tubuh |
-| 4 | Akhsanul Taqwim | 23210006 | Dashboard pemantauan dan visualisasi grafik secara langsung |
-| 5 | Wira | 23210045 | Pelaksanaan pengujian lapangan: variasi jarak, penghalang, dan interferensi |
-| 6 | Abadi | 23210004 | Pengujian daya tahan baterai dan pencatatan waktu pemakaian |
-| 7 | Ferdyan Ardhani | 23210039 | Pengolahan data hasil pengukuran menjadi tabel dan grafik laporan |
-| 8 | Muhammad Iqbal | 23210142 | Perbandingan hasil pengukuran dengan alat pembanding (oximeter dan termometer) |
-| 9 | Meriandi Wahyu Kurniawan | [NIM] | Dokumentasi, README, dan pengelolaan repository |
+| 1 | Paris Mursidan Aufal | 23210125 | Aplikasi server dan basis data penyimpanan data sensor |
+| 2 | Yogi Prasetya Sadewa | 23210060 | Ketua kelompok; perangkat lunak penerima, perhitungan QoS, dan integrasi BLE/MQTT |
+| 3 | M. Sidiq Prasetio | 23210075 | Aplikasi client (dashboard web) yang membaca data dari server |
+| 4 | Deski Taiza | 23210003 | Firmware Node 1 (BLE + MAX30102) dan kalibrasi pembacaan |
+| 5 | Wira | 23210045 | Firmware Node 2 (WiFi + MQTT + MLX90614) dan pengujian jarak |
+| 6 | T. Zain Wardana | 23210001 | Pengukuran QoS empat parameter dan penyusunan laporan pengujian |
 
 ## 2. Masalah dan Tujuan
 
@@ -89,14 +86,13 @@ Pemantauan tanda vital pasien masih dilakukan secara manual: petugas datang ke t
 
 | Bagian yang dijanjikan selesai | Bentuk bukti pada Pertemuan 8 | Penanggung jawab |
 |---|---|---|
-| Kedua node menyala dan mengirim payload berisi waktu kirim serta nomor urut | Catatan keluaran serial kedua node dan paket yang diterima penerima | Asmarudin dan Deski Taiza |
+| Kedua node menyala dan mengirim payload berisi waktu kirim serta nomor urut | Catatan keluaran serial kedua node dan paket yang diterima penerima | Deski Taiza dan Wira |
 | Penerima menerima data dari dua jalur (BLE dan MQTT) dan menghitung empat parameter QoS | Berkas CSV hasil satu sesi pengukuran beserta kodenya | Yogi Prasetya Sadewa |
-| Dashboard menampilkan grafik detak jantung, SpO2, dan suhu secara langsung | Halaman dashboard yang dapat dibuka dan menampilkan minimal dua grafik | Akhsanul Taqwim |
-| Hasil awal pengukuran pada tiga jarak (1 m, 4 m, 8 m) | Tabel sementara hasil pengukuran tiga jarak | Wira |
-| Pembacaan sensor dibandingkan dengan alat pembanding dan selisihnya dicatat | Tabel perbandingan pembacaan sensor dengan oximeter dan termometer | Muhammad Iqbal |
-| Berkas data hasil pengukuran dirapikan menjadi tabel dan grafik siap laporan | Tabel dan grafik hasil pengukuran pada dokumen laporan | Ferdyan Ardhani |
-| Lama pemakaian baterai tiap node dicatat pada beberapa sesi pengujian | Tabel lama pemakaian per sesi dan catatan kondisi pengujian | Abadi |
-| Repository aktif: README, struktur folder, dan riwayat commit | Riwayat commit mingguan dan tautan repository | Meriandi Wahyu Kurniawan |
+| Aplikasi server menerima data node dan menyimpannya ke basis data | Skema tabel, keluaran permintaan uji, dan isi basis data | Paris Mursidan Aufal |
+| Aplikasi client menampilkan data dari server dan diperbarui berkala | Halaman client yang dapat dibuka dan menampilkan minimal dua grafik | M. Sidiq Prasetio |
+| Hasil awal pengukuran tiga jarak (1 m, 4 m, 8 m) beserta keempat parameter QoS | Tabel sementara hasil pengukuran tiga jarak | T. Zain Wardana |
+| Pembacaan sensor dibandingkan dengan alat pembanding dan selisihnya dicatat | Tabel perbandingan pembacaan sensor dengan oximeter dan termometer | Wira |
+| Repository aktif: README, struktur folder, dan riwayat commit | Riwayat commit mingguan dan tautan repository | Paris Mursidan Aufal |
 
 ## 6. Rencana Pencapaian UAS (Pertemuan 16) dan Skenario Demonstrasi
 
