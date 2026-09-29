@@ -27,7 +27,7 @@ Dua node sensor nirkabel yang dikenakan pada tubuh: satu di pergelangan tangan u
 
 ## Rencana Proyek
 
-- Google Docs (dibagikan kepada dosen dengan akses komentar) — tautan: `[ISI TAUTAN]`
+- Google Docs (dibagikan kepada dosen dengan akses komentar) — tautan: [MKKL1029 — Wearable Health Monitor](https://docs.google.com/document/d/1PLGa2ZfahxGsNL8aDKZaN4ubkPujqq-t2FL4Pyx6I9A/edit)
 - Salinan di repository: [`docs/rencana-proyek.md`](docs/rencana-proyek.md)
 
 ## Cara Menjalankan
