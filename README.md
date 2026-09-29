@@ -132,5 +132,14 @@ mkkl1029-health-monitor/
 | Tahap | Target | Status |
 |---|---|---|
 | Pertemuan 2 | Rencana proyek, repository, undangan kolaborator | Selesai |
-| Pertemuan 8 (UTS) | Kedua node menyala dan mengirim payload berisi waktu kirim serta nomor urut … | Belum dimulai |
-| Pertemuan 16 (UAS) | Dua node sensor nirkabel yang berjalan penuh, dari pembacaan sensor sampai tampilan dashbo … | Belum dimulai |
+| Pertemuan 8 (UTS) | Kedua node menyala dan mengirim payload berisi waktu kirim serta nomor urut | Belum dimulai |
+| Pertemuan 16 (UAS) | Dua node sensor nirkabel berjalan penuh, dari pembacaan sensor sampai dashboard | Belum dimulai |
+
+Yang **sudah terbukti jalan** (diuji 25–29 Sep 2026, lihat [`docs/pengujian.md`](docs/pengujian.md)):
+
+- Penerima dua jalur (BLE + MQTT) beserta perhitungan keempat parameter QoS — diuji dengan `--source sim`.
+- Dashboard Streamlit dan laporan teks di terminal; grafik tanda vital tersimpan sebagai PNG.
+- Kedua firmware lolos kompilasi `arduino-cli` (`esp32:esp32` 3.3.12); Node 1 memakai 91% ruang program.
+
+Yang **belum** bisa dilakukan tanpa perangkat keras: pembacaan sensor sungguhan,
+penyambungan BLE, dan pengiriman MQTT dari node fisik.
