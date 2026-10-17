@@ -220,6 +220,7 @@ def _folder_keluaran(out_dir: str) -> Path:
     return p
 
 
+
 def simpan_hasil(pelacak: dict[str, PelacakQos], folder: Path,
                  nama_sesi: str, catatan: dict | None = None) -> tuple[Path, Path]:
     csv_path = folder / f"{nama_sesi}.csv"
@@ -233,10 +234,29 @@ def simpan_hasil(pelacak: dict[str, PelacakQos], folder: Path,
         "nama_sesi": nama_sesi,
         "waktu": datetime.now().isoformat(timespec="seconds"),
         "catatan": catatan or {},
-        "per_node": {n: p.ringkasan() for n, p in sorted(pelacak.items())},
+        "per_node": {
+            n: p.ringkasan() for n, p in sorted(pelacak.items())
+        },
     }
+
     json_path = folder / f"{nama_sesi}.ringkasan.json"
-    json_path.write_text(json.dumps(ringkasan, indent=2, ensure_ascii=False), "utf-8")
+    json_path.write_text(
+        json.dumps(ringkasan, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    # Simpan juga ke database SQLite.
+    try:
+        from .storage import simpan_sesi
+    except ImportError:
+        from storage import simpan_sesi
+
+    paket_per_node = {
+        node: pelacak[node].baris_csv()
+        for node in sorted(pelacak)
+    }
+    simpan_sesi(nama_sesi, ringkasan, paket_per_node)
+
     return csv_path, json_path
 
 

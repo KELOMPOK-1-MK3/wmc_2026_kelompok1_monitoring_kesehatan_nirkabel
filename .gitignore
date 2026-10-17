@@ -23,3 +23,8 @@ config.local.h
 
 # Keluaran grafik yang dibangkitkan (boleh dibuat ulang dengan --plot)
 docs/grafik/
+
+# Database lokal
+data/*.db
+data/*.sqlite
+data/*.sqlite3
