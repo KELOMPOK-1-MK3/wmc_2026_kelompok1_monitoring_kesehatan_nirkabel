@@ -4,9 +4,9 @@
 |---|---|
 | Proyek | MKKL1029 Wireless/Mobile Computing — Kelompok 1 |
 | Dokumen | Functional Requirements Document (FRD) untuk antarmuka dashboard |
-| Versi | 1.1 — 28 Oktober 2026 |
+| Versi | 1.2 — 28 Oktober 2026 |
 | Berkait | `docs/arsitektur.md`, `docs/pengujian.md`, `src/penerima/penerima.py` |
-| Status | Diterapkan pada `src/dashboard/index.html` v1.1 (tema terang, 28 Oktober 2026) |
+| Status | Diterapkan pada `src/dashboard/index.html` v1.2 (tema terang, 28 Oktober 2026) |
 
 ## 1. Tujuan
 
@@ -117,7 +117,8 @@ Prioritas: **W** = wajib, **S** = sebaiknya.
 | NFR-08 | Tidak menampilkan isi trafik, hanya volume dan domain | Tidak ada kolom URL penuh atau data pribadi |
 | NFR-09 | Tetap terbaca pada 1280×720 (proyektor) dan 1512×982 | Tidak ada gulir mendatar; tabel tetap utuh |
 | NFR-10 | Pembaruan tidak mengubah tata letak | Tidak ada lompatan posisi saat angka berubah |
-| NFR-11 | Animasi hemat dan sopan | Maksimum 220 titik di kanvas; bila sistem meminta kurangi gerak (`prefers-reduced-motion`), animasi melambat ke 2 bingkai/detik dan tetap terbaca |
+| NFR-11 | Skema menyesuaikan lebar jendela | Lebar ≥ 1000 px: empat perangkat berjajar, label tiga baris di bawah ikon. Lebih sempit: perangkat bertumpuk, label di samping ikon. Isi label tidak dipotong di kedua tata letak |
+| NFR-12 | Animasi hemat dan sopan | Maksimum 220 titik di kanvas; bila sistem meminta kurangi gerak (`prefers-reduced-motion`), animasi melambat ke 2 bingkai/detik dan tetap terbaca |
 
 ## 8. Rancangan Tampilan
 
@@ -202,4 +203,5 @@ rambut, huruf judul berkelas serif, angka monospace, satu warna aksen.
 | Versi | Tanggal | Perubahan |
 |---|---|---|
 | 1.0 | 2026-10-28 | Versi pertama; tema terang menggantikan dashboard gelap awal |
-| 1.1 | 2026-10-28 | Tambah skema perangkat dan kotak animasi aliran data (FR-21…FR-24, NFR-11) |
+| 1.1 | 2026-10-28 | Tambah skema perangkat dan kotak animasi aliran data (FR-21…FR-24) |
+| 1.2 | 2026-10-28 | Dua tata letak skema (lebar/sempit), satuan sumbu menyatu dengan tick teratas, label MAC utuh, angka total = jumlah angka per perangkat |
