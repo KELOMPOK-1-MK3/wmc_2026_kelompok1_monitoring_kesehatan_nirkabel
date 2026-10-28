@@ -110,7 +110,7 @@ wmc_2026_kelompok1_monitoring_kesehatan_nirkabel/
 │   └── esp32-gateway/   # ESP32: klien + hotspot + NAPT + hitung per perangkat + USB serial
 ├── src/
 │   ├── penerima/        # pembaca USB serial, hitung QoS, simpan SQLite, sajikan dashboard
-│   └── dashboard/       # tampilan (HTML + JS tanpa pustaka)
+│   └── dashboard/       # tampilan tema terang (HTML + JS tanpa pustaka)
 ├── arsip/               # kode topik lama (node sensor kesehatan) — disimpan, tidak dipakai
 └── data/                # hasil pengukuran
 ```
@@ -121,6 +121,7 @@ wmc_2026_kelompok1_monitoring_kesehatan_nirkabel/
 |---|---|
 | `docs/rencana-proyek.md` | Masalah, tujuan, arsitektur, target UTS dan UAS, pembagian kerja, risiko |
 | `docs/arsitektur.md` | Komponen, alur data, rumus QoS, dan apa yang tidak bisa dideteksi |
+| `docs/FRD-dashboard.md` | Kebutuhan fungsional dashboard: FR-01…FR-20, NFR-01…NFR-10, palet, status tepi |
 | `docs/pengujian.md` | Skenario S1–S5, batas nilai yang diharapkan, cara mencatat hasil |
 | `docs/diagrams/` | Diagram arsitektur sistem |
 
@@ -159,8 +160,10 @@ Yang **sudah ada dan sudah dijalankan**:
   perangkat, penyimpan SQLite, dan penyaji dashboard. Diuji dengan `--uji` (lulus), dengan
   angka tiruan (`--sim`), dan dengan port serial tiruan (pty): 4 baris `tr` menghasilkan
   laju 773,7 kbps, DNS tercatat, RTT terbaca.
-- `src/dashboard/index.html` — dashboard langsung: KPI, grafik laju, grafik RTT, kartu
-  perangkat berisi pemakaian, retry, kekuatan sinyal, dan nama domain terakhir.
+- `src/dashboard/index.html` — dashboard tema terang bergaya halaman laporan: strip empat
+  angka kunci, grafik laju dua seri, grafik waktu sambung uplink, dan tabel perangkat berisi
+  pemakaian, retry, kekuatan sinyal, serta domain terakhir. Rancangan dan kriteria terimanya
+  ada di `docs/FRD-dashboard.md` (20 kebutuhan fungsional, 10 non-fungsional).
 
 Yang **belum** (jangan diklaim selesai):
 

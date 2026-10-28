@@ -12,7 +12,7 @@
 | ESP32 | Gerbang + pencatat | Mode ganda: klien (uplink) sekaligus hotspot (untuk perangkat uji), ditambah NAPT |
 | HP-2 … HP-5 | Perangkat yang diukur | Tersambung ke hotspot ESP32, bukan ke HP-1 — kalau ke HP-1, trafiknya tidak lewat ESP32 dan tidak ada yang bisa diukur |
 | Kabel USB-C | Jalur catatan ke laptop | Telemetri lewat serial, bukan jaringan; laptop tidak perlu ikut WiFi mana pun |
-| Laptop | Penerima + dashboard + penyimpanan | Satu-satunya tempat data disimpan |
+| Laptop | Penerima + dashboard + penyimpanan | Satu-satunya tempat data disimpan; tampilan mengikuti `docs/FRD-dashboard.md` |
 
 ## Alur Data
 
