@@ -251,6 +251,11 @@ class Pengumpul:
 
 # ------------------------------------------------------------------ sumber --
 
+class PortLepas(RuntimeError):
+    """Port serial hilang di tengah sesi (kabel dicabut / papan restart)."""
+
+
+
 def baca_port(port: str):
     """Buka port serial tanpa pustaka luar; hasilkan baris satu per satu."""
     fd = os.open(port, os.O_RDONLY | os.O_NOCTTY | os.O_NONBLOCK)
@@ -265,14 +270,25 @@ def baca_port(port: str):
     attrs[6][termios.VTIME] = 0
     termios.tcsetattr(fd, termios.TCSANOW, attrs)
     sisa = b""
+    kosong = 0
     try:
         while True:
             siap, _, _ = select.select([fd], [], [], 1.0)
             if not siap:
                 continue
-            data = os.read(fd, 4096)
+            try:
+                data = os.read(fd, 4096)
+            except OSError:
+                # kabel dicabut atau papan restart: port hilang
+                raise PortLepas(port)
             if not data:
+                # ujung lain menutup: di macOS ini EOF, bukan OSError
+                kosong += 1
+                if kosong >= 20:
+                    raise PortLepas(port)
+                time.sleep(0.05)
                 continue
+            kosong = 0
             sisa += data
             while b"\n" in sisa:
                 baris, sisa = sisa.split(b"\n", 1)
@@ -439,6 +455,7 @@ def utama() -> int:
     sumber = aliran_simulasi() if a.sim else baca_port(a.port)
     mulai = time.monotonic()
     terakhir_kuras = mulai
+    kode = 0
     try:
         for baris in sumber:
             entri = urai(baris)
@@ -450,6 +467,10 @@ def utama() -> int:
                 terakhir_kuras = time.monotonic()
             if a.durasi and time.monotonic() - mulai >= a.durasi:
                 break
+    except PortLepas as e:
+        print(f"\nport {e} lepas — kabel dicabut atau papan restart.", file=sys.stderr)
+        print("sambung lagi lalu jalankan ulang; riwayat sesi sudah tersimpan.", file=sys.stderr)
+        kode = 2
     except KeyboardInterrupt:
         print("\nberhenti")
     finally:
@@ -458,7 +479,7 @@ def utama() -> int:
         print(f"sesi {k['sesi']} ({mode}) — {len(k['perangkat'])} perangkat, "
               f"{len(k['histori'])} titik grafik, rtt rata-rata {k['rtt']['rata2']} ms")
         print(f"tersimpan: {a.db}")
-    return 0
+    return kode
 
 
 if __name__ == "__main__":
