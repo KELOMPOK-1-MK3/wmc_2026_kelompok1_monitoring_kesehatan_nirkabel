@@ -1,98 +1,101 @@
 # Pengujian
 
-## Cara Menjalankan Penerima
+## Yang Perlu Disiapkan
+
+- 1 papan ESP32 DevKit, 1 kabel USB-C, 1 adaptor daya cadangan.
+- 5 telepon genggam: satu sebagai sumber internet (hotspot 2,4 GHz), empat sebagai objek ukur.
+- Laptop dengan Python 3.10+ dan port USB.
+
+## Urutan Menjalankan
 
 ```bash
-pip install -r src/receiver/requirements.txt
+# 1. Unggah firmware gerbang (isi SSID/sandi lebih dulu di berkas .ino)
+arduino-cli compile --fqbn esp32:esp32:esp32 --upload -p /dev/cu.usbserial-XXXX firmware/esp32-gateway
 
-# Uji coba tanpa perangkat keras (dua node tiruan, 60 detik):
-python src/receiver/receiver.py --source sim --durasi 60 --skenario uji
-
-# Pengukuran sesungguhnya:
-python src/receiver/receiver.py --source ble       # Node 1
-python src/receiver/receiver.py --source mqtt --mqtt-host 192.168.1.10
-python src/receiver/receiver.py --source dua       # keduanya sekaligus
-
-# Simpan grafik ke docs/grafik/:
-python src/dashboard/app.py --plot
+# 2. Lihat catatan mentah dari kabel USB
+arduino-cli monitor -p /dev/cu.usbserial-XXXX -c baudrate=115200
 ```
 
-Hasil tiap sesi: satu CSV per paket dan satu `.ringkasan.json` berisi keempat
-parameter QoS pada folder `data/`.
+Urutan nyala yang dipakai setiap sesi:
 
-> [!warning] Angka simulasi bukan hasil pengukuran
-> Mode `--source sim` memakai dua node tiruan dengan jejak delay buatan. Gunanya
-> menguji perhitungan QoS dan dashboard **sebelum** perangkat keras selesai
-> dirakit, bukan menghasilkan data untuk laporan. Tabel di bawah hanya boleh
-> diisi dari sesi `--source ble` atau `--source mqtt` dengan perangkat
-> sesungguhnya.
+1. Hotspot HP-1 dinyalakan (2,4 GHz, WPA2, tanpa mode hemat daya).
+2. ESP32 dicolok ke laptop, monitor serial dibuka sampai muncul `# uplink ... ip ...`.
+3. Perangkat uji disambungkan ke hotspot `ESP32-QoS`.
+4. Kegiatan dijalankan sesuai skenario, dicatat waktu mulai dan selesainya.
 
-### Catatan penting: latency yang dilaporkan adalah delay relatif
+> [!warning] Angka harus dari perangkat nyata
+> Catatan dari simulator (Wokwi) hanya sah untuk membuktikan packet loss, throughput,
+> dan perbandingan relatif antar protokol. Latency dan jitter absolut dari simulator
+> **tidak sah** karena jam simulasi berjalan lebih lambat daripada jam dinding —
+> pada pengujian 21 Oktober 2026 selisihnya mencapai 36 detik. Angka latency dari
+> simulator tidak boleh masuk laporan.
 
-Jam pada node dan jam pada laptop penerima tidak sama, sehingga
-`t_terima − t_kirim` bukan latency, melainkan latency ditambah selisih jam.
-Penerima mengestimasi selisih jam itu sebagai nilai **terkecil** dari
-`t_terima − t_kirim` sepanjang sesi (paket tercepat dianggap hampir tanpa
-antrean). Akibatnya angka latency adalah **delay relatif terhadap paket
-tercepat**, bukan delay absolut. Nilai selisih jam yang dipakai dicatat pada
-berkas ringkasan (`offset_jam_detik` dan `catatan_latency`) supaya dapat
-diperiksa, dan hal ini wajib disebutkan saat melaporkan hasil.
+## Batas Nilai yang Diharapkan
 
-Cara membandingkan metode penyelarasan jam:
+Angka ini ditetapkan sebelum mengukur, sebagai patokan penilaian — bukan hasil.
 
-```bash
-python src/receiver/receiver.py --source mqtt --metode-offset minimum   # bawaan
-python src/receiver/receiver.py --source mqtt --metode-offset awal
-python src/receiver/receiver.py --source mqtt --metode-offset tanpa
-```
+| Parameter | Batas yang diharapkan |
+|---|---|
+| Latency | di bawah 150 ms |
+| Packet loss | di bawah 2 % |
+| Jitter | di bawah 50 ms |
+| Throughput | di atas 800 kbps total |
 
-## Skenario yang Diuji
+## Skenario
 
-| # | Skenario | Yang divariasikan | Parameter yang diamati |
-|---|---|---|---|
-| 1 | Jarak dekat | Node pada 1 m dari penerima | Keempat parameter QoS |
-| 2 | Jarak sedang | Node pada 4 m dari penerima | Keempat parameter QoS |
-| 3 | Jarak jauh | Node pada 8 m dari penerima | Keempat parameter QoS |
-| 4 | Penghalang | Dinding atau tubuh di antara node dan penerima | Packet loss, jitter |
-| 5 | Interferensi | Ruangan padat perangkat 2,4 GHz vs kosong | Latency, jitter |
-| 6 | Koneksi terputus | Salah satu node dimatikan saat pengiriman | Perilaku penyambungan ulang |
-| 7 | Daya | Pengiriman terus-menerus sampai baterai habis | Lama pemakaian |
+Setiap skenario dijalankan lima menit dan diulang tiga kali; yang dilaporkan adalah
+nilai tengahnya. Kegiatan yang dijalankan sama di semua skenario: menggulir media
+sosial, memutar video, dan mengunduh satu berkas.
 
-## Cara Mencatat Hasil
+| Skenario | Jumlah perangkat aktif | Yang dijalankan |
+|---|---|---|
+| S1 | 1 perangkat | Menggulir media sosial |
+| S2 | 1 perangkat | Mengunduh berkas besar |
+| S3 | 2 perangkat | Satu menggulir, satu mengunduh |
+| S4 | 4 perangkat | Semua aktif bersamaan |
+| S5 | 4 perangkat tanpa kegiatan | Pengukuran dasar (pembanding) |
 
-Setiap sesi pengukuran menghasilkan satu berkas CSV pada folder `data/` dengan
-penamaan `sesi-<skenario>-<tanggal>-<jam>.csv`. Setiap berkas dicatat pula pada
-tabel di bawah beserta kondisi ruangan saat pengukuran berlangsung.
+Tambahan yang dicatat di luar skenario utama:
 
-Hal yang wajib dicatat pada setiap sesi:
+| Uji tambahan | Yang divariasikan | Yang diamati |
+|---|---|---|
+| Jarak | Perangkat pada 1 m, 4 m, 8 m dari ESP32 | Packet loss, jitter |
+| Penghalang | Dinding atau tubuh di antara perangkat dan ESP32 | Packet loss |
+| Kanal padat | Ruangan ramai perangkat 2,4 GHz | Latency, jitter |
+| Uplink putus | Hotspot HP-1 dimatikan saat pengujian | Waktu sambung ulang, perilaku dashboard |
 
-- Waktu dan tanggal pengukuran.
-- Jarak node ke penerima.
-- Kondisi ruangan: jumlah orang dan perkiraan jumlah perangkat WiFi aktif.
-- Node mana yang dipakai (dan posisi pemasangan sensornya).
-- Pembanding: hasil pembacaan oximeter jari dan termometer digital.
+## Hal yang Wajib Dicatat Tiap Sesi
 
-## Tabel Hasil Sementara
+- Tanggal, jam mulai, dan jam selesai.
+- Skenario yang dijalankan dan jumlah perangkat aktif.
+- Kondisi ruangan: jumlah orang, perkiraan jumlah jaringan WiFi 2,4 GHz yang terlihat.
+- Jarak perangkat ke ESP32 dan posisi ponsel (di tangan, di meja, di kantong).
+- Kanal hotspot, model ponsel, dan operator seluler sumber internet.
 
-| Skenario | Waktu | Latency rata-rata (ms) | Packet loss (%) | Jitter (ms) | Throughput (paket/s) | Catatan |
+## Tabel Hasil
+
+| Skenario | Tanggal | Latency (ms) | Packet loss (%) | Jitter (ms) | Throughput (kbps) | Catatan |
 |---|---|---|---|---|---|---|
-| Jarak 1 m | Belum diukur | — | — | — | — | — |
-| Jarak 4 m | Belum diukur | — | — | — | — | — |
-| Jarak 8 m | Belum diukur | — | — | — | — | — |
+| S1 — 1 perangkat, gulir | Belum diukur | — | — | — | — | — |
+| S2 — 1 perangkat, unduh | Belum diukur | — | — | — | — | — |
+| S3 — 2 perangkat | Belum diukur | — | — | — | — | — |
+| S4 — 4 perangkat | Belum diukur | — | — | — | — | — |
+| S5 — 4 perangkat diam | Belum diukur | — | — | — | — | — |
+| Jarak 1 / 4 / 8 m | Belum diukur | — | — | — | — | — |
 | Penghalang | Belum diukur | — | — | — | — | — |
-| Interferensi | Belum diukur | — | — | — | — | — |
-| Koneksi terputus | Belum diukur | — | — | — | — | — |
-| Daya | Belum diukur | — | — | — | — | — |
+| Kanal padat | Belum diukur | — | — | — | — | — |
+| Uplink putus | Belum diukur | — | — | — | — | — |
 
-## Perbandingan dengan Alat Pembanding
+## Yang Sudah Terbukti (Simulator, 21–28 Oktober 2026)
 
-| Sesi | Pembacaan sensor | Pembacaan alat pembanding | Selisih |
-|---|---|---|---|
-| Detak jantung | Belum diukur | — | — |
-| SpO2 | Belum diukur | — | — |
-| Suhu tubuh | Belum diukur | — | — |
+Pengujian di Wokwi dipakai untuk memastikan firmware dan penerima bekerja sebelum
+perangkat keras tersedia. Hasilnya **bukan** data laporan, tetapi berguna sebagai bukti
+bahwa pengiriman dan penghitungan tidak salah:
 
-## Catatan
+- 192 paket diterima, nomor urut 582–773 tanpa lompatan, 0 % hilang, ±3,97 paket/detik
+  pada interval kirim 250 ms.
+- Latency tercatat 1.918,65 ms dan jitter 246,88 ms — **tidak sah**, penyebabnya
+  selisih jam simulasi seperti dijelaskan di atas.
+- QoS 0 terbukti berjalan. QoS 1 dan 2 sudah dapat dikompilasi tetapi belum dijalankan.
 
-Tabel di halaman ini diisi setelah pengukuran pertama dilakukan (minggu ke-6).
-Hasil lengkap beserta grafiknya disusun pada laporan akhir menjelang UAS.
+Berkas bukti pengujian simulator disimpan pada folder kerja terpisah di luar repository.

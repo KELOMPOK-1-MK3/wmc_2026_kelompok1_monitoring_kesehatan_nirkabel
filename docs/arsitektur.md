@@ -1,57 +1,66 @@
 # Arsitektur Sistem
 
-![Diagram arsitektur](diagrams/arsitektur-mkkl1029.png)
+![Diagram arsitektur](diagrams/arsitektur-gateway-esp32.png)
 
-## Komponen
+*Gambar 1. Empat perangkat uji melewati ESP32; catatan pemakaian dikirim ke laptop lewat kabel USB.*
 
-| Komponen | Fungsi | Titik ukur |
+## Peran Tiap Bagian
+
+| Bagian | Peran | Catatan |
 |---|---|---|
-| Node 1 — pergelangan | ESP32 + MAX30102 membaca detak jantung dan SpO2 | Waktu kirim (`t_kirim`), nomor urut (`seq`), nilai bpm/SpO2 |
-| Node 2 — dada/ketiak | ESP32 + MLX90614 membaca suhu tubuh tanpa sentuh | Waktu kirim (`t_kirim`), nomor urut (`seq`), nilai suhu |
-| Broker MQTT | Meneruskan pesan dari Node 2 menuju penerima | Waktu terima di broker |
-| Penerima (laptop) | Mendengarkan BLE dan MQTT, menghitung parameter QoS | Waktu terima (`t_terima`), jumlah byte |
-| Dashboard | Menampilkan grafik tanda vital dan hasil pengukuran | — |
+| HP-1 | Hotspot 2,4 GHz penyedia internet | Jalur, bukan objek ukur. Dipilih 2,4 GHz karena ESP32 tidak mengenal 5 GHz |
+| ESP32 | Gerbang + pencatat | Mode ganda: klien (uplink) sekaligus hotspot (untuk perangkat uji), ditambah NAPT |
+| HP-2 … HP-5 | Perangkat yang diukur | Tersambung ke hotspot ESP32, bukan ke HP-1 — kalau ke HP-1, trafiknya tidak lewat ESP32 dan tidak ada yang bisa diukur |
+| Kabel USB-C | Jalur catatan ke laptop | Telemetri lewat serial, bukan jaringan; laptop tidak perlu ikut WiFi mana pun |
+| Laptop | Penerima + dashboard + penyimpanan | Satu-satunya tempat data disimpan |
 
 ## Alur Data
 
-1. Node 1 dan Node 2 membentuk payload `{node_id, seq, t_kirim, nilai}`.
-2. Node 1 mengirim melalui BLE; Node 2 mengirim melalui WiFi ke topik MQTT.
-3. Penerima mencatat `t_terima` setiap paket tiba, lalu menghitung `latency = t_terima - t_kirim`.
-4. Nomor urut dipakai mendeteksi paket hilang; selisih latency antar paket berurutan menjadi jitter.
-5. Hasil disimpan sebagai CSV per sesi dan dikirim ke dashboard untuk ditampilkan sebagai grafik.
+1. Perangkat uji mengirim permintaan (mis. membuka media sosial).
+2. Permintaan masuk ke hotspot ESP32.
+3. ESP32 meneruskannya lewat jalur uplink ke HP-1 dengan NAPT, sambil mencatat: perangkat mana, berapa byte naik dan turun, berapa paket, sambungan aktif, dan nama domain yang ditanyakan lewat DNS.
+4. Catatan itu dikirim ke laptop sebagai baris CSV pendek lewat kabel USB.
+5. Penerima menambah cap waktu terima, menghitung parameter QoS, menyimpan ke SQLite, dan meneruskannya ke dashboard.
+6. ESP32 tidak menyimpan riwayat; kalau kabel dicabut, catatan berhenti. Riwayat hanya ada di laptop.
 
 ## Rumus
 
 | Parameter | Rumus | Satuan |
 |---|---|---|
-| Latency | `(t_terima - t_kirim) x 1000` | milidetik |
-| Jitter | `abs(latency[i] - latency[i-1])` | milidetik |
-| Packet loss | `1 - (seq unik diterima / seq seharusnya)` | persen |
-| Throughput | `jumlah paket diterima / durasi` | paket per detik |
+| Latency | `t_terima − t_kirim` (dengan koreksi selisih jam) | milidetik |
+| Jitter | `abs(latency[i] − latency[i−1])` | milidetik |
+| Packet loss | `1 − (seq unik diterima / seq seharusnya)` | persen |
+| Throughput | `jumlah byte diterima / durasi` | bit per detik |
 
-## Protokol
+Catatan latency: jam ESP32 dan jam laptop tidak sama, jadi selisih jam diestimasi
+dari nilai terkecil `t_terima − t_kirim` sepanjang sesi. Angka yang dilaporkan adalah
+**delay relatif terhadap paket tercepat**, bukan delay absolut, dan itu wajib
+disebutkan saat melaporkan hasil. Nilai selisih jam yang dipakai ditulis ke berkas
+ringkasan setiap sesi.
 
-- **BLE (Bluetooth Low Energy)** — jalur Node 1, dipilih karena hemat daya dan cocok untuk perangkat yang dikenakan.
-- **MQTT di atas WiFi 2,4 GHz** — jalur Node 2, dipilih karena ringan dan mendukung banyak node.
-- **TCP** — lapisan pengangkut untuk MQTT. Untuk pengukuran packet loss, catat juga jumlah pesan yang tidak sampai sebagai pembanding.
-- **HTTP/WebSocket** — jalur tampilan dashboard.
+## Protokol dan Lapisan
 
-## Catatan Perancangan
+| Lapisan | Yang dipakai | Keterangan |
+|---|---|---|
+| Fisik / MAC | IEEE 802.11 b/g/n, pita 2,4 GHz, kanal 6 | Satu radio dipakai untuk dua peran (klien + AP), jadi throughput terbagi |
+| Jaringan | IPv4, NAT/NAPT | `WiFi.AP.enableNAPT(true)` pada ESP32 core 3.x |
+| Nama | DNS | Hanya nama domain yang terlihat; isi permintaan tidak |
+| Aplikasi | HTTP/HTTPS, QUIC | Isi terenkripsi — tidak dibaca, hanya volumenya yang dihitung |
+| Telemetri | Serial USB (115200 baud), CSV satu arah | Tidak memakai jaringan, tidak memakai broker |
 
-Waktu kirim diambil dari jam masing-masing node. Agar latency yang dihitung tidak
-terpengaruh selisih jam node dan laptop, penerima mengestimasi selisih jam itu
-sebagai **nilai terkecil** dari `t_terima − t_kirim` sepanjang sesi: paket
-tercepat dianggap hampir tanpa antrean, sehingga selisihnya mendekati selisih
-jam murni.
+## Yang Bisa dan Tidak Bisa Diketahui
 
-Akibatnya angka latency yang dilaporkan adalah **delay relatif terhadap paket
-tercepat**, bukan delay absolut — dan itu wajib disebutkan saat melaporkan
-hasil. Nilai selisih jam yang dipakai (`offset_jam_detik`) serta keterangan
-metodenya (`catatan_latency`) ditulis ke berkas ringkasan setiap sesi supaya
-dapat diperiksa. Penerima menyediakan `--metode-offset minimum|awal|tanpa`
-untuk membandingkan ketiga cara.
+| Pertanyaan | Bisa? | Sebab |
+|---|---|---|
+| Berapa byte naik/turun tiap perangkat | Bisa | Dihitung per alamat IP/MAC di ESP32 |
+| Berapa paket dan sambungan aktif tiap perangkat | Bisa | Sama, per alamat |
+| Situs/aplikasi apa yang dibuka | Sebagian | Hanya nama domain dari DNS. Isi HTTPS/QUIC terenkripsi; aplikasi bisa memakai IP langsung atau DNS terenkripsi |
+| Kekuatan sinyal tiap perangkat | Sebagian | RSSI klien AP tidak disediakan API Arduino; diukur lewat cara lain atau dicatat manual |
+| Kecepatan tiap perangkat | Bisa, terbatas | Batas atas ±1–2 Mbps total karena satu radio dan setengah-duplex |
 
-Node 1 (BLE) memakai waktu sejak menyala karena tidak tersambung internet,
-sedangkan Node 2 (WiFi) dapat mengambil waktu dari NTP. Keduanya tetap berjalan
-dengan penyelarasan di sisi penerima, dan menghidupkan NTP pada Node 1 hanya
-membuat selisihnya lebih kecil — bukan syarat agar latency terhitung.
+## Batas Perangkat Keras
+
+- SoftAP bawaan ESP32 sanggup 4 klien. Skenario lima perangkat uji butuh pengaturan ulang batas ini.
+- Satu radio untuk dua peran: setiap detik yang dipakai memancarkan hotspot tidak dipakai menerima dari uplink, sehingga throughput lebih rendah daripada angka teoretis.
+- Hotspot HP sering mematikan diri saat tidak ada trafik; firmware menyambung ulang tiap 5 detik.
+- Banyak hotspot HP mengisolasi klien, sehingga perangkat uji tidak dapat saling terhubung. Untuk pengukuran ini tidak masalah karena jalur data hanya menuju internet.

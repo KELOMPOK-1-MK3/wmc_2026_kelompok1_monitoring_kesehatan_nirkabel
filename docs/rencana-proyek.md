@@ -1,143 +1,154 @@
-# Rencana Proyek — Wearable Health Monitor — Dua Node Sensor Nirkabel untuk Pemantauan Detak Jantung, SpO2, dan Suhu Tubuh
+# Rencana Proyek — Gerbang WiFi ESP32 untuk Pemantauan QoS Banyak Perangkat
 
-**Mata kuliah:** Wireless / Mobile Computing (MKKL1029) · Semester 7  
-**Program Studi Ilmu Komputer — Fakultas Sains, Teknologi dan Ilmu Kesehatan, Universitas Bina Bangsa Getsempena**  
-**Dosen Pengampu:** Ahmad Mujahid Abdurrahman, S.Kom, M.T.  
-**Versi:** 1.0 — 19 September 2026
+**Mata kuliah:** Wireless / Mobile Computing (MKKL1029) · Semester 7
+**Program Studi Ilmu Komputer — Fakultas Sains, Teknologi dan Ilmu Kesehatan, Universitas Bina Bangsa Getsempena**
+**Dosen Pengampu:** Ahmad Mujahid Abdurrahman, S.Kom, M.T.
+**Versi:** 2.0 — 28 Oktober 2026 (menggantikan topik *wearable health monitor*)
 
-> Salinan kerja dari dokumen rencana proyek pada Google Docs. Perubahan wajib dilakukan pada kedua tempat agar penilaian tetap sinkron.
+> Salinan markdown dari proposal yang dikumpulkan. Versi resmi ada di
+> `docs/proposal/` — kalau berbeda, yang di `docs/proposal/` yang berlaku.
 
 ## 1. Identitas Kelompok
 
-| No | Nama | NIM | Peran |
+| No | Nama | NIM | Bagian yang dikerjakan |
 |---|---|---|---|
-| 1 | Paris Mursidan Aufal | 23210125 | Aplikasi server dan basis data penyimpanan data sensor |
-| 2 | Yogi Prasetya Sadewa | 23210060 | Ketua kelompok; perangkat lunak penerima, perhitungan QoS, dan integrasi BLE/MQTT |
-| 3 | M. Sidiq Prasetio | 23210075 | Aplikasi client (dashboard web) yang membaca data dari server |
-| 4 | Deski Taiza | 23210003 | Firmware Node 1 (BLE + MAX30102) dan kalibrasi pembacaan |
-| 5 | Wira | 23210045 | Firmware Node 2 (WiFi + MQTT + MLX90614) dan pengujian jarak |
-| 6 | T. Zain Wardana | 23210001 | Pengukuran QoS empat parameter dan penyusunan laporan pengujian |
+| 1 | Paris Mursidan Aufal | 23210125 | Penerima di laptop + basis data SQLite |
+| 2 | Yogi Prasetya Sadewa | 23210060 | Ketua kelompok; penghitung QoS + penggabung data per perangkat |
+| 3 | M. Sidiq Prasetio | 23210075 | Dashboard web + grafik langsung |
+| 4 | Deski Taiza | 23210003 | Firmware mode ganda (hotspot + klien) + NAPT |
+| 5 | Wira | 23210045 | Firmware pencatat pemakaian per perangkat + DNS |
+| 6 | T. Zain Wardana | 23210001 | Pengujian QoS + laporan |
 
 ## 2. Masalah dan Tujuan
 
 ### Masalah yang diselesaikan
 
-Pemantauan tanda vital pasien masih dilakukan secara manual: petugas datang ke tempat tidur, menempelkan alat, mencatat angka di kertas, lalu memindahkannya ke rekam medis. Cara ini memakan waktu, menyulitkan pemantauan berkelanjutan, dan tidak menghasilkan data historis yang rapi. Padahal pemantauan yang terputus membuat perubahan kondisi pasien mudah terlewat. Proyek ini membangun dua node sensor nirkabel yang dapat dikenakan pada tubuh untuk membaca detak jantung, saturasi oksigen (SpO2), dan suhu tubuh, lalu mengirimkannya secara nirkabel ke penerima untuk dipantau langsung — sekaligus mengukur seberapa andal kanal nirkabel yang dipakai.
+Satu jaringan WiFi biasanya dipakai banyak perangkat sekaligus, dan ketika semuanya
+aktif koneksi terasa melambat. Yang tidak pernah terdengar adalah angkanya: berapa
+perangkat yang aktif, berapa pemakaian masing-masing, dan seberapa besar kualitas
+jaringan turun ketika jumlah perangkat bertambah. Halaman pengaturan router rumahan
+umumnya hanya menampilkan daftar perangkat yang tersambung dan total pemakaian,
+bukan rincian per detik untuk tiap perangkat. Kelompok ini membuat alat ukur sederhana
+untuk mengisi kekosongan itu.
 
 ### Latar belakang
 
-- Alat pemantauan vital yang tersedia di pasaran umumnya mahal dan tertutup, sehingga tidak dapat dimodifikasi untuk keperluan pembelajaran.
-- Mikrokontroler ESP32 dan sensor MAX30102 serta MLX90614 sudah tersedia luas dengan harga terjangkau dan pustaka yang matang.
-- Belum ada pengukuran yang menunjukkan pada jarak dan kondisi ruangan seperti apa kualitas pengiriman data vital mulai menurun.
+- Keluhan "internetnya lemot" tidak bisa dibuktikan tanpa angka.
+- Router murah tidak menyediakan catatan pemakaian per perangkat dalam bentuk yang
+  bisa diolah.
+- ESP32 sudah tersedia dan harganya murah, sehingga bisa dijadikan gerbang sekaligus
+  alat ukur tanpa membeli perangkat baru.
 
 ### Pengguna sasaran
 
-- Perawat dan petugas jaga, yang membutuhkan pantauan tanda vital tanpa harus terus berada di sisi pasien.
-- Dosen dan mahasiswa, sebagai sarana pembelajaran sistem sensor nirkabel dan pengukuran kualitas layanan.
+- Mahasiswa dan pengguna kos: ingin tahu perangkat mana yang menghabiskan kuota.
+- Dosen dan mahasiswa: bahan pembelajaran 802.11, NAT, DNS, dan QoS.
 
 ### Batasan lingkup
 
-- Dua node nirkabel: satu di pergelangan tangan (detak jantung dan SpO2) dan satu di dada atau ketiak (suhu tubuh).
-- Pengujian dibatasi pada empat skenario: jarak node ke penerima, keberadaan penghalang, interferensi 2,4 GHz, dan kondisi koneksi terputus.
-- Alat ini bukan perangkat medis; hasil pengukuran tidak dipakai untuk diagnosis dan hanya dibandingkan dengan alat pembanding untuk melihat selisih.
-- Pengujian dilakukan pada anggota kelompok sendiri sebagai relawan, bukan pada pasien.
+- Isi trafik terenkripsi (HTTPS/QUIC) tidak dibaca; hanya besar data, jumlah paket,
+  dan nama domain dari DNS.
+- Identifikasi kegiatan adalah perkiraan dari nama domain, bukan kepastian.
+- ESP32 bukan pengganti router: throughput ±1–2 Mbps.
+- Maksimal 4 perangkat uji + 1 HP sebagai sumber internet.
+- ESP32 tidak menyimpan riwayat; penyimpanan hanya di laptop.
+- Pengujian di satu ruangan, satu titik, tanpa uji jarak jauh.
 
-### Tujuan proyek
+### Tujuan
 
-1. Membangun dua node sensor nirkabel yang benar-benar mengirim data detak jantung, SpO2, dan suhu tubuh melalui kanal nirkabel.
-2. Mengukur dan melaporkan empat parameter kualitas layanan: latency, throughput, packet loss, dan jitter.
-3. Mendokumentasikan keterbatasan nirkabel yang dialami — jarak, penghalang, interferensi, dan daya — beserta pengaruhnya terhadap keandalan pengiriman data vital.
+1. Membuat satu ESP32 yang meneruskan internet ke empat perangkat sekaligus sambil
+   mencatat pemakaian tiap perangkat.
+2. Mengirim catatan itu ke laptop tanpa jaringan, hanya lewat kabel USB.
+3. Menampilkan data perangkat secara langsung pada dashboard.
+4. Mengukur pengaruh jumlah perangkat aktif terhadap latency, jitter, packet loss,
+   dan throughput.
 
 ## 3. Arsitektur Sistem
 
-![Diagram arsitektur](diagrams/arsitektur-mkkl1029.png)
+![Diagram arsitektur](diagrams/arsitektur-gateway-esp32.png)
 
-*Gambar 1. Arsitektur dua node sensor nirkabel dan alur data menuju penerima serta dashboard.*
+*Gambar 1. Susunan sistem — empat perangkat klien melewati ESP32, catatan pemakaian dikirim ke laptop lewat kabel USB.*
 
-### Komponen utama
+- HP-1: hotspot 2,4 GHz, sumber internet. Jalur, bukan objek ukur.
+- ESP32: klien sekaligus hotspot, ditambah NAPT; mencatat pemakaian per perangkat.
+- HP-2 … HP-5: perangkat yang diukur, tersambung ke hotspot ESP32.
+- Kabel USB-C: jalur catatan ke laptop, tanpa jaringan.
+- Laptop: penerima, penghitung QoS, penyimpanan SQLite, dashboard.
 
-- Node 1 (pergelangan): ESP32 dengan sensor MAX30102 untuk detak jantung dan SpO2, mengirim melalui BLE (Bluetooth Low Energy).
-- Node 2 (dada/ketiak): ESP32 dengan sensor MLX90614 untuk suhu tubuh tanpa sentuh, mengirim melalui WiFi 2,4 GHz ke broker MQTT.
-- Penerima: laptop yang menjalankan pendengar BLE untuk Node 1 dan pelanggan MQTT untuk Node 2, sekaligus menjadi tempat penyimpanan data.
-- Broker MQTT (Mosquitto): perantara pesan antara Node 2 dan penerima pada jaringan WiFi lokal.
-- Modul QoS: bagian perangkat lunak yang menghitung latency, throughput, packet loss, dan jitter dari setiap paket yang diterima.
-- Dashboard: antarmuka grafik yang menampilkan nilai detak jantung, SpO2, dan suhu secara langsung beserta ringkasan hasil pengukuran.
+Alur data dan rumus QoS ada pada [`arsitektur.md`](arsitektur.md).
 
-### Alur data dan protokol
+## 4. Alat dan Bahan
 
-- Setiap node membentuk payload berisi identitas node, nomor urut paket (seq), waktu kirim (t_kirim), dan nilai sensor.
-- Node 1 mengirim payload melalui BLE; Node 2 mengirim melalui WiFi ke broker MQTT dengan topik per node.
-- Penerima mencatat waktu tiba (t_terima) setiap paket, lalu menghitung latency sebagai selisih t_terima dan t_kirim.
-- Packet loss dihitung dari nomor urut yang tidak berurutan, jitter dari selisih latency antar paket berurutan, dan throughput dari jumlah paket yang diterima per satuan waktu.
-- Hasil pengukuran disimpan sebagai berkas CSV per sesi dan ditampilkan pada dashboard sebagai grafik.
+| No | Nama alat | Jumlah | Perkiraan harga | Subtotal |
+|---|---|---|---|---|
+| 1 | ESP32 DevKit V1 | 1 buah | Rp 65.000 | Rp 65.000 |
+| 2 | Kabel USB-C ke USB-C | 1 buah | Rp 35.000 | Rp 35.000 |
+| 3 | Kabel USB-C ke USB-A (cadangan) | 1 buah | Rp 25.000 | Rp 25.000 |
+| 4 | Adaptor daya USB 5V 2A | 1 buah | Rp 30.000 | Rp 30.000 |
+| | | | **Total** | **Rp 155.000** |
 
-## 4. Tools dan Lingkungan
-
-- Perangkat keras: 2 unit ESP32, sensor MAX30102, sensor MLX90614, baterai Li-Po 3,7 V, modul pengisi daya, dan kabel penghubung.
-- Perangkat lunak node: Arduino IDE dengan pustaka SparkFun MAX3010x, Adafruit MLX90614, dan PubSubClient untuk MQTT.
-- Perangkat lunak penerima: Python 3 dengan bleak (BLE), paho-mqtt, pandas, dan matplotlib.
-- Broker: Mosquitto, dijalankan pada laptop yang sama dengan penerima.
-- Pembanding: oximeter jari dan termometer digital, untuk melihat selisih pembacaan.
-- Kolaborasi: GitHub untuk kode dan dokumentasi, Google Docs untuk rencana proyek, serta Issues untuk pembagian tugas.
+Laptop, empat telepon genggam, dan telepon genggam sumber internet sudah dimiliki
+anggota; ESP32 sudah tersedia dari pengujian sebelumnya. Perangkat lunak: Arduino IDE
+dengan dukungan ESP32, Python, SQLite — semuanya gratis.
 
 ## 5. Rencana Pencapaian UTS (Pertemuan 8)
 
-*Target ini menjadi acuan penilaian: capaian kelompok pada Pertemuan 8 dibandingkan dengan janji berikut.*
-
-| Bagian yang dijanjikan selesai | Bentuk bukti pada Pertemuan 8 | Penanggung jawab |
+| Bagian yang dijanjikan selesai | Bentuk bukti | Penanggung jawab |
 |---|---|---|
-| Kedua node menyala dan mengirim payload berisi waktu kirim serta nomor urut | Catatan keluaran serial kedua node dan paket yang diterima penerima | Deski Taiza dan Wira |
-| Penerima menerima data dari dua jalur (BLE dan MQTT) dan menghitung empat parameter QoS | Berkas CSV hasil satu sesi pengukuran beserta kodenya | Yogi Prasetya Sadewa |
-| Aplikasi server menerima data node dan menyimpannya ke basis data | Skema tabel, keluaran permintaan uji, dan isi basis data | Paris Mursidan Aufal |
-| Aplikasi client menampilkan data dari server dan diperbarui berkala | Halaman client yang dapat dibuka dan menampilkan minimal dua grafik | M. Sidiq Prasetio |
-| Hasil awal pengukuran tiga jarak (1 m, 4 m, 8 m) beserta keempat parameter QoS | Tabel sementara hasil pengukuran tiga jarak | T. Zain Wardana |
-| Pembacaan sensor dibandingkan dengan alat pembanding dan selisihnya dicatat | Tabel perbandingan pembacaan sensor dengan oximeter dan termometer | Wira |
-| Repository aktif: README, struktur folder, dan riwayat commit | Riwayat commit mingguan dan tautan repository | Paris Mursidan Aufal |
+| Firmware mode ganda + NAPT, ESP32 meneruskan internet ke perangkat uji | Keluaran serial `# uplink ...` dan perangkat uji bisa membuka halaman web | Deski Taiza |
+| Catatan `hb`/`ev` terbaca di laptop lewat kabel USB | Tangkapan monitor serial | Deski Taiza, Wira |
+| Penerima di laptop membaca catatan serial dan menyimpannya | Berkas CSV/SQLite hasil satu sesi | Paris Mursidan Aufal |
+| Dashboard menampilkan jumlah klien dan pemakaian per perangkat | Halaman dashboard yang bisa dibuka | M. Sidiq Prasetio |
+| Hasil awal pengukuran S1 dan S3 | Tabel sementara | T. Zain Wardana |
+| Repository aktif: README, proposal, riwayat commit | Riwayat commit mingguan | Yogi Prasetya Sadewa |
 
-## 6. Rencana Pencapaian UAS (Pertemuan 16) dan Skenario Demonstrasi
+## 6. Rencana Pencapaian UAS (Pertemuan 16)
 
-### Definisi produk akhir
+### Produk akhir
 
-- Dua node sensor nirkabel yang berjalan penuh, dari pembacaan sensor sampai tampilan dashboard.
-- Laporan pengukuran lengkap: tabel dan grafik latency, throughput, packet loss, dan jitter pada seluruh skenario.
-- Analisis keterbatasan nirkabel beserta rekomendasi penempatan penerima dan pemilihan kanal untuk pemakaian sehari-hari.
+- ESP32 gerbang berjalan penuh: meneruskan internet, menghitung pemakaian per
+  perangkat, mencatat nama domain.
+- Dashboard di laptop yang menampilkan pemakaian per perangkat secara langsung.
+- Laporan pengukuran S1–S5 beserta tabel dan grafik keempat parameter QoS.
+- Pembahasan keterbatasan nirkabel: bagi-bagi bandwidth, batas 4 klien, pita 2,4 GHz
+  yang padat, dan pengaruh jarak.
 
 ### Skenario demonstrasi
 
-1. Menyalakan kedua node dan memperlihatkan data masuk ke dashboard secara langsung.
-2. Membandingkan pembacaan sensor dengan oximeter dan termometer sebagai verifikasi awal.
-3. Menjauhkan node secara bertahap dan memperlihatkan perubahan latency serta packet loss.
-4. Meletakkan penghalang berupa dinding atau tubuh di antara node dan penerima.
-5. Memutus salah satu node dan memperlihatkan perilaku sistem saat koneksi hilang, termasuk proses penyambungan ulang otomatis.
-6. Menampilkan grafik QoS dari seluruh sesi yang sudah tersimpan sebagai temuan utama.
-7. Setiap anggota menjelaskan modul yang dikerjakannya, dipilih langsung oleh dosen.
+1. Menyalakan sistem dan memperlihatkan empat perangkat mendapat internet lewat ESP32.
+2. Memperlihatkan catatan pemakaian tiap perangkat bergerak saat ada kegiatan.
+3. Menjalankan S1 → S3 → S4 dan memperlihatkan latency naik serta throughput per
+   perangkat turun.
+4. Mencabut kabel USB dan memperlihatkan catatan berhenti (bukti ESP32 tidak menyimpan).
+5. Mematikan hotspot HP-1 dan memperlihatkan proses sambung ulang.
+6. Setiap anggota menjelaskan bagian yang dikerjakannya, dipilih langsung oleh dosen.
 
 ## 7. Pembagian Kerja per Minggu
 
 | Minggu | Kegiatan utama | Luaran |
 |---|---|---|
-| Ke-2 | Finalisasi rencana, pengadaan komponen, dan penyiapan repository | Rencana proyek, komponen dipesan, repository siap |
-| Ke-3 | Pencobaan sensor MAX30102 dan MLX90614 secara terpisah | Pembacaan sensor muncul pada keluaran serial |
-| Ke-4 | Membangun pengiriman BLE dari Node 1 dan WiFi/MQTT dari Node 2 | Kedua node mengirim paket berisi waktu kirim dan nomor urut |
-| Ke-5 | Membangun penerima dan modul perhitungan empat parameter QoS | Berkas CSV hasil pengukuran pertama |
-| Ke-6 | Menambahkan dashboard grafik dan pengujian tiga jarak | Grafik langsung dan tabel hasil tiga jarak |
-| Ke-7 | Pengujian penghalang dan interferensi, penyusunan bahan UTS | Bahan UTS lengkap dan dokumen diperbarui |
-| Ke-8 | Pembahasan progres UTS dan tindak lanjut catatan dosen | Catatan perbaikan dan rencana revisi |
-| Ke-9 s.d. 15 | Pengulangan pengukuran, pengujian daya tahan baterai, dan penyusunan laporan akhir | Data lengkap dan laporan pengujian |
-| Ke-16 | Presentasi dan demonstrasi produk akhir | Produk akhir dan laporan final |
+| Ke-8 | Finalisasi proposal dan penyusunan ulang repository | Proposal, README, struktur folder |
+| Ke-9 | Firmware mode ganda + NAPT diuji dengan perangkat nyata | Perangkat uji mendapat internet lewat ESP32 |
+| Ke-10 | Penghitung byte per perangkat dan pembaca nama domain | Baris catatan per perangkat di serial |
+| Ke-11 | Penerima serial + penyimpanan SQLite | Berkas hasil satu sesi |
+| Ke-12 | Dashboard langsung | Halaman dashboard dengan grafik |
+| Ke-13 | Pengukuran S1–S5 | Tabel hasil pengukuran |
+| Ke-14 | Uji jarak, penghalang, kanal padat | Tabel hasil tambahan |
+| Ke-15 | Pengolahan hasil dan penyusunan laporan | Draf laporan lengkap |
+| Ke-16 | Presentasi dan demonstrasi | Laporan akhir dan bahan presentasi |
 
 ## 8. Risiko dan Rencana Cadangan
 
 | Risiko | Rencana cadangan |
 |---|---|
-| Pembacaan MAX30102 sensitif terhadap posisi dan gerakan sehingga angkanya berubah-ubah | Uji beberapa posisi pemasangan, gunakan pengikat yang stabil, dan bandingkan hasilnya dengan oximeter jari pada kondisi diam. |
-| Bluetooth pada laptop tidak mendukung BLE atau pustaka tidak berjalan | Gunakan adaptor Bluetooth eksternal, atau pindahkan jalur Node 1 ke WiFi/MQTT sebagai jalur cadangan. |
-| Jaringan WiFi kampus memisahkan perangkat (client isolation) sehingga node tidak dapat menjangkau broker | Uji lebih awal; bila terpisah, jalankan broker pada hotspot ponsel atau access point khusus pengujian. |
-| Baterai habis lebih cepat dari perkiraan saat pengiriman terus-menerus | Catat waktu pemakaian setiap sesi, kurangi frekuensi kirim saat pengujian daya, dan sediakan baterai cadangan. |
-| Anggota tidak aktif sehingga jadwal meleset | Setiap bagian memiliki penanggung jawab cadangan; ketua melaporkan kondisi ini pada sesi progres kepada dosen. |
+| NAPT tidak berjalan sehingga perangkat uji tidak dapat internet | Uji lebih awal; bila gagal, pakai firmware contoh ESP32 NAPT resmi atau turunkan target menjadi pengukuran tanpa internet (hanya lalu lintas lokal) |
+| Hotspot HP mengisolasi klien atau mematikan diri saat kosong | Matikan mode hemat daya hotspot; sediakan router 2,4 GHz sebagai cadangan |
+| Penghitung byte per perangkat tidak tersedia di API Arduino | Hitung di lapisan lwIP atau pakai cermin port (port mirroring) pada router cadangan |
+| Angka latency tidak masuk batas karena dibagi empat perangkat | Laporkan apa adanya dan jelaskan sebabnya — bagian dari temuan, bukan kegagalan |
+| Anggota tidak aktif sehingga jadwal meleset | Setiap bagian punya penanggung jawab cadangan; ketua melaporkan kondisi pada sesi progres |
 
-## 9. Riwayat dan Pembaruan Dokumen
+## 9. Riwayat Dokumen
 
-Versi 1.0 — 19 September 2026: dokumen awal disusun setelah penetapan topik, memuat rencana pencapaian UTS, rencana pencapaian UAS, pembagian kerja per minggu, serta risiko dan rencana cadangan. Dokumen ini maksimal empat halaman dan diperbarui pada setiap sesi pembahasan progres mingguan.
-
-- `19 September 2026` — v1.0 dokumen awal dibuat.
+- v1.0 — 19 September 2026: rencana topik *wearable health monitor* (tidak dilanjutkan).
+- v2.0 — 28 Oktober 2026: topik diganti menjadi pemantauan QoS banyak perangkat dengan
+  ESP32 sebagai gerbang; seluruh isi disesuaikan dengan proposal baru.
