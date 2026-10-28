@@ -162,6 +162,38 @@
     font-variant-numeric: tabular-nums;
   }
 
+
+  /* ------------------------------------------------- skema perangkat --- */
+  .papan {
+    border: 1px solid var(--garis-tipis);
+    background: var(--permukaan);
+    padding: 6px 10px 2px;
+    margin-top: 10px;
+  }
+  #skema { display: block; width: 100%; height: auto; }
+  #skema .kabel { stroke: #cdc6b6; stroke-width: 1.2; fill: none; }
+  #skema .kabel.aktif { stroke: var(--turun); stroke-width: 1.6; }
+  #skema .kotak { fill: #fdfbf5; stroke: var(--teks); stroke-width: 1.3; }
+  #skema .papan-esp { fill: #f4f1e7; stroke: var(--teks); stroke-width: 1.4; }
+  #skema .pin { stroke: var(--teks); stroke-width: 1; }
+  #skema .t { font-family: var(--mono); font-size: 10px; fill: var(--teks); }
+  #skema .t-kecil { font-family: var(--sans); font-size: 9px; letter-spacing: 0.06em; fill: var(--teks-2); text-transform: uppercase; }
+  #skema .t-nama { font-family: var(--sans); font-size: 11px; fill: var(--teks); }
+  #skema .lampu { fill: #c9c2b2; }
+  #skema .lampu.hidup { fill: var(--aksen); }
+  #skema .hp { fill: #fffdf8; stroke: #b9b2a2; stroke-width: 1.2; }
+  #skema .hp.aktif { stroke: var(--aksen); stroke-width: 1.8; }
+  #skema .layar { fill: #f2efe6; }
+  #skema .layar.aktif { fill: #e7f0ea; }
+
+  .kotak-animasi {
+    margin-top: 10px;
+    border: 1px solid var(--garis-tipis);
+    background: #fcfaf4;
+    padding: 4px;
+  }
+  #animasi { display: block; width: 100%; height: 190px; }
+
   /* --------------------------------------------------------- grafik --- */
   .bagian { padding-top: 26px; }
   .kepala-bagian {
@@ -358,6 +390,64 @@
       <div class="nilai"><span id="kPerangkat">0</span><span class="satuan">aktif</span></div>
       <div class="sub" id="sPerangkat">dari 0 klien menurut gerbang</div>
     </div>
+  </section>
+
+
+  <section class="bagian">
+    <div class="kepala-bagian">
+      <h2>Perangkat tersambung</h2>
+      <span id="infoDiagram">gerbang dan klien · diperbarui tiap detik</span>
+    </div>
+    <div class="papan">
+      <svg id="skema" viewBox="0 0 1040 236" role="img"
+           aria-label="Skema sumber internet, gerbang ESP32, dan empat perangkat uji">
+        <!-- sumber internet -->
+        <g>
+          <rect class="kotak" x="30" y="78" width="150" height="80" rx="2"></rect>
+          <text class="t-kecil" x="46" y="100">sumber</text>
+          <text class="t-nama" x="46" y="122">Internet</text>
+          <text class="t" x="46" y="140">hotspot HP-1</text>
+          <circle class="lampu" id="lampuUplink" cx="160" cy="92" r="3.4"></circle>
+        </g>
+
+        <!-- kabel sumber ke gerbang -->
+        <path class="kabel" id="kabelUplink" d="M180 118 H300"></path>
+        <text class="t-kecil" x="196" y="110" id="tUplink">menunggu</text>
+
+        <!-- papan ESP32 -->
+        <g>
+          <rect class="papan-esp" x="300" y="56" width="160" height="124" rx="3"></rect>
+          <rect x="318" y="74" width="124" height="88" rx="2"
+                fill="none" stroke="#b9b2a2" stroke-width="1" stroke-dasharray="3 3"></rect>
+          <text class="t-kecil" x="318" y="48">gerbang</text>
+          <text class="t-nama" x="330" y="100">ESP32</text>
+          <text class="t" x="330" y="118" id="tKlien">0 klien</text>
+          <text class="t" x="330" y="134" id="tUplinkDb">uplink — dBm</text>
+          <circle class="lampu" id="lampuPapan" cx="438" cy="70" r="3.4"></circle>
+        </g>
+
+        <!-- kabel gerbang ke perangkat -->
+        <path class="kabel" id="kabel0" d="M460 92 L700 118"></path>
+        <path class="kabel" id="kabel1" d="M460 106 L786 118"></path>
+        <path class="kabel" id="kabel2" d="M460 130 L872 118"></path>
+        <path class="kabel" id="kabel3" d="M460 144 L958 118"></path>
+
+        <!-- perangkat, disusun skrip -->
+        <g id="deretHp"></g>
+      </svg>
+    </div>
+  </section>
+
+  <section class="bagian">
+    <div class="kepala-bagian">
+      <h2>Aliran data</h2>
+      <div class="legenda">
+        <span><i style="background:var(--turun)"></i>turun</span>
+        <span><i style="background:var(--naik)"></i>naik</span>
+        <span id="infoAnimasi">menunggu data</span>
+      </div>
+    </div>
+    <div class="kotak-animasi"><canvas id="animasi"></canvas></div>
   </section>
 
   <div class="kosong-kotak" id="kosongKotak">
@@ -606,6 +696,216 @@
     });
   }
 
+
+  /* ------------------------------------------------- skema perangkat --- */
+  const NS = 'http://www.w3.org/2000/svg';
+  const HP_X = [700, 786, 872, 958];
+
+  function buatDeret() {
+    const deret = el('deretHp');
+    HP_X.forEach((x, i) => {
+      const g = document.createElementNS(NS, 'g');
+      g.setAttribute('id', 'hp' + i);
+      const badan = document.createElementNS(NS, 'rect');
+      badan.setAttribute('class', 'hp');
+      badan.setAttribute('x', x); badan.setAttribute('y', 70);
+      badan.setAttribute('width', 58); badan.setAttribute('height', 96);
+      badan.setAttribute('rx', 6);
+      const layar = document.createElementNS(NS, 'rect');
+      layar.setAttribute('class', 'layar');
+      layar.setAttribute('x', x + 5); layar.setAttribute('y', 78);
+      layar.setAttribute('width', 48); layar.setAttribute('height', 66);
+      layar.setAttribute('rx', 2);
+      const batang = document.createElementNS(NS, 'g');
+      [0, 1, 2, 3].forEach(b => {
+        const r = document.createElementNS(NS, 'rect');
+        r.setAttribute('x', x + 10 + b * 5); r.setAttribute('y', 128 - b * 4);
+        r.setAttribute('width', 3); r.setAttribute('height', 6 + b * 4);
+        r.setAttribute('fill', '#b9b2a2'); r.setAttribute('class', 'bar');
+        batang.appendChild(r);
+      });
+      const nama = document.createElementNS(NS, 'text');
+      nama.setAttribute('class', 't'); nama.setAttribute('x', x + 29);
+      nama.setAttribute('y', 182); nama.setAttribute('text-anchor', 'middle');
+      nama.textContent = '—';
+      const laju = document.createElementNS(NS, 'text');
+      laju.setAttribute('class', 't'); laju.setAttribute('x', x + 29);
+      laju.setAttribute('y', 196); laju.setAttribute('text-anchor', 'middle');
+      laju.setAttribute('fill', '#6b6459'); laju.textContent = 'kosong';
+      const namaKecil = document.createElementNS(NS, 'text');
+      namaKecil.setAttribute('class', 't'); namaKecil.setAttribute('x', x + 29);
+      namaKecil.setAttribute('y', 210); namaKecil.setAttribute('text-anchor', 'middle');
+      namaKecil.setAttribute('fill', '#8b8478'); namaKecil.textContent = '';
+      g.append(badan, layar, batang, nama, laju, namaKecil);
+      deret.appendChild(g);
+    });
+  }
+
+  function gambarSkema(perangkat, d) {
+    const urut = perangkat.slice(0, 4);
+    const aktif = urut.filter(p => p.turun_kbps + p.naik_kbps > 0).length;
+
+    el('tKlien').textContent = `${d.klien ?? 0} klien`;
+    el('tUplinkDb').textContent = d.rssi_uplink ? `uplink ${d.rssi_uplink} dBm` : 'uplink — dBm';
+    el('tUplink').textContent = d.rssi_uplink ? 'jalur hidup' : 'menunggu uplink';
+    el('kabelUplink').classList.toggle('aktif', !!d.rssi_uplink);
+    el('lampuUplink').classList.toggle('hidup', !!d.rssi_uplink);
+    el('lampuPapan').classList.toggle('hidup', aktif > 0);
+    el('infoDiagram').textContent = `${aktif} dari 4 slot terisi · klik Jeda untuk membekukan`;
+
+    HP_X.forEach((x, i) => {
+      const g = el('hp' + i);
+      const p = urut[i];
+      const kabel = el('kabel' + i);
+      const hidup = p && (p.turun_kbps + p.naik_kbps) > 0;
+      kabel.classList.toggle('aktif', !!hidup);
+      g.querySelector('.hp').classList.toggle('aktif', !!hidup);
+      g.querySelector('.layar').classList.toggle('aktif', !!hidup);
+
+      const bar = g.querySelectorAll('.bar');
+      const tingkat = p ? (p.rssi >= -55 ? 4 : p.rssi >= -65 ? 3 : p.rssi >= -75 ? 2 : 1) : 0;
+      bar.forEach((r, b) => {
+        r.setAttribute('fill', b < tingkat ? (p && p.rssi <= -75 ? '#8a5a06' : '#191713') : '#cfc8b8');
+      });
+
+      const teks = g.querySelectorAll('text');
+      if (p) {
+        teks[0].textContent = p.mac.slice(-8).toUpperCase();
+        teks[1].textContent = `${rupiah(p.turun_kbps)} kbps`;
+        teks[2].textContent = p.ip;
+      } else {
+        teks[0].textContent = '—';
+        teks[1].textContent = 'kosong';
+        teks[2].textContent = '';
+      }
+    });
+  }
+
+  /* ------------------------------------------------- kotak animasi ----- */
+  const titik = [];          // {x, y, arah, warna, v}
+  let akum = [0, 0, 0, 0];   // penumpuk pembentukan titik per perangkat
+  let terakhirGambar = 0;
+  let bingkai = 0;
+
+  function ukurAnimasi(canvas) {
+    const r = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    if (canvas.width !== Math.round(r.width * dpr) || canvas.height !== Math.round(r.height * dpr)) {
+      canvas.width = Math.round(r.width * dpr);
+      canvas.height = Math.round(r.height * dpr);
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, w: r.width, h: r.height };
+  }
+
+  function gambarAnimasi(waktu) {
+    const canvas = el('animasi');
+    const { ctx, w, h } = ukurAnimasi(canvas);
+    const dt = terakhirGambar ? Math.min((waktu - terakhirGambar) / 1000, 0.1) : 0;
+    terakhirGambar = waktu;
+    bingkai++;
+
+    ctx.clearRect(0, 0, w, h);
+    const data = (jsonTerakhir && jsonTerakhir.perangkat) || [];
+    const urut = data.slice(0, 4);
+    const kiri = 54, kanan = w - 96;
+    const tengah = (kiri + kanan) / 2;
+
+    ctx.font = '10px "SF Mono", ui-monospace, Menlo, monospace';
+    ctx.textBaseline = 'middle';
+
+    // kolom kiri/kanan dan pembatas gerbang
+    ctx.strokeStyle = '#e2dccd';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(Math.round(tengah) + 0.5, 22);
+    ctx.lineTo(Math.round(tengah) + 0.5, h - 22);
+    ctx.stroke();
+
+    ctx.fillStyle = '#8b8478';
+    ctx.textAlign = 'left';
+    ctx.fillText('internet', 6, 12);
+    ctx.textAlign = 'center';
+    ctx.fillText('gerbang', tengah, 12);
+    ctx.textAlign = 'right';
+    ctx.fillText('perangkat', w - 6, 12);
+
+    const tinggiBaris = Math.min(38, (h - 40) / 4);
+    let bergerak = false;
+
+    // kalau JSON tidak mengirim perangkat, tetap gambar empat jalur kosong
+    for (let i = 0; i < 4; i++) {
+      const p = urut[i];
+      const y = 30 + i * tinggiBaris + tinggiBaris / 2;
+      const naik = p ? p.naik_kbps : 0;
+      const turun = p ? p.turun_kbps : 0;
+      const adaData = naik + turun > 0;
+
+      ctx.strokeStyle = '#ddd6c6';
+      ctx.setLineDash([3, 4]);
+      ctx.beginPath();
+      ctx.moveTo(kiri, y + 0.5);
+      ctx.lineTo(kanan, y + 0.5);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.textAlign = 'right';
+      ctx.fillStyle = p ? '#191713' : '#b3ab9b';
+      ctx.fillText(p ? p.mac.slice(-8).toUpperCase() : '—', kiri - 8, y);
+
+      if (p && adaData) {
+        bergerak = true;
+        const dalam = Math.max(0.35, Math.min(1, (naik + turun) / 900));
+        const laju = 90 + Math.min(260, (naik + turun) * 0.18);
+        const perDetikNaik = Math.min(8, naik / 140);
+        const perDetikTurun = Math.min(10, turun / 140);
+
+        if (dt > 0) akum[i] += (perDetikNaik + perDetikTurun) * dt;
+        let lahir = 0;
+        while (akum[i] >= 1 && lahir < 8) {
+          akum[i] -= 1;
+          lahir++;
+          const keAtas = Math.random() < (naik / (naik + turun));
+          titik.push({
+            x: keAtas ? kanan : kiri,
+            y: y + (Math.random() * 6 - 3),
+            arah: keAtas ? -1 : 1,
+            warna: keAtas ? '15,91,71' : '35,87,127',
+            v: laju * (0.75 + Math.random() * 0.5),
+            alfa: dalam,
+          });
+        }
+      } else {
+        akum[i] = 0;
+      }
+    }
+
+    const batasKiri = kiri, batasKanan = kanan;
+    for (let i = titik.length - 1; i >= 0; i--) {
+      const t = titik[i];
+      t.x += t.arah * t.v * dt;
+      if (t.x < batasKiri - 6 || t.x > batasKanan + 6) { titik.splice(i, 1); continue; }
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, 2.1, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${t.warna},${0.22 + 0.5 * t.alfa})`;
+      ctx.fill();
+    }
+    if (titik.length > 220) titik.splice(0, titik.length - 220);
+
+    el('infoAnimasi').textContent = bergerak
+      ? `${titik.length} titik bergerak · satu titik mewakili paket`
+      : 'menunggu data dari perangkat';
+  }
+
+  window.__animasi = () => ({
+    bingkai: bingkai,
+    jumlah: titik.length,
+    kiri: titik.length ? Math.round(Math.min(...titik.map(t => t.x))) : 0,
+    kanan: titik.length ? Math.round(Math.max(...titik.map(t => t.x))) : 0,
+  });
+
+
   /* ------------------------------------------------------------- tabel */
   function gambarTabel(perangkat, kini) {
     const tbody = el('isiTabel');
@@ -686,6 +986,7 @@
     const titik = sejarah.length;
     el('infoTitik').textContent = `${titik} titik · maksimum 180`;
 
+    gambarSkema(perangkat, d);
     gambarTabel(perangkat, waktu);
     gambarLaju();
     gambarRtt();
@@ -724,8 +1025,12 @@
     if (jsonTerakhir) { gambarLaju(); gambarRtt(); }
   });
 
+  buatDeret();
   putar();
   setInterval(putar, 1000);
+
+  const kurangiGerak = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  setInterval(() => gambarAnimasi(performance.now()), kurangiGerak ? 500 : 60);
 })();
 </script>
 </body>

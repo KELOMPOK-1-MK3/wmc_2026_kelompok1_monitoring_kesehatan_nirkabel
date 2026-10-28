@@ -161,9 +161,11 @@ Yang **sudah ada dan sudah dijalankan**:
   angka tiruan (`--sim`), dan dengan port serial tiruan (pty): 4 baris `tr` menghasilkan
   laju 773,7 kbps, DNS tercatat, RTT terbaca.
 - `src/dashboard/index.html` — dashboard tema terang bergaya halaman laporan: strip empat
-  angka kunci, grafik laju dua seri, grafik waktu sambung uplink, dan tabel perangkat berisi
-  pemakaian, retry, kekuatan sinyal, serta domain terakhir. Rancangan dan kriteria terimanya
-  ada di `docs/FRD-dashboard.md` (20 kebutuhan fungsional, 10 non-fungsional).
+  angka kunci, **skema sumber internet → gerbang → empat perangkat** yang menyala mengikuti
+  keadaan, **kotak animasi aliran data** (titik paket bergerak dua arah, rapat mengikuti laju),
+  grafik laju dua seri, grafik waktu sambung uplink, dan tabel perangkat berisi pemakaian,
+  retry, kekuatan sinyal, serta domain terakhir. Rancangan dan kriteria terimanya ada di
+  `docs/FRD-dashboard.md` (24 kebutuhan fungsional, 11 non-fungsional).
 
 Yang **belum** (jangan diklaim selesai):
 

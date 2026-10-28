@@ -4,9 +4,9 @@
 |---|---|
 | Proyek | MKKL1029 Wireless/Mobile Computing — Kelompok 1 |
 | Dokumen | Functional Requirements Document (FRD) untuk antarmuka dashboard |
-| Versi | 1.0 — 28 Oktober 2026 |
+| Versi | 1.1 — 28 Oktober 2026 |
 | Berkait | `docs/arsitektur.md`, `docs/pengujian.md`, `src/penerima/penerima.py` |
-| Status | Diterapkan pada `src/dashboard/index.html` v1.0 (tema terang, 28 Oktober 2026) |
+| Status | Diterapkan pada `src/dashboard/index.html` v1.1 (tema terang, 28 Oktober 2026) |
 
 ## 1. Tujuan
 
@@ -98,6 +98,10 @@ Prioritas: **W** = wajib, **S** = sebaiknya.
 | FR-18 | Menjeda pembaruan tanpa menghentikan penerima | S | Tombol `Jeda`/`Lanjut` menghentikan polling; status tetap terlihat |
 | FR-19 | Menyembunyikan perangkat yang sudah pergi lebih dari 30 detik | S | Baris perangkat hilang setelah 30 detik tanpa data, tanpa menghapus riwayat grafik |
 | FR-20 | Menampilkan catatan metode pengukuran | W | Footer menyebut hitungan dari bingkai 802.11, retry sebagai petunjuk loss, waktu sambung ≠ ping |
+| FR-21 | Menggambar skema: sumber internet → gerbang ESP32 → empat perangkat | W | Tiga kelompok tergambar sebagai kotak berlabel; satu kabel per perangkat, berangkat dari sisi gerbang |
+| FR-22 | Skema mengikuti keadaan nyata | W | Lampu sumber hijau bila uplink hidup; garis kabel per perangkat menyala hanya bila perangkat itu mengirim data; slot kosong bergaris putus-putus |
+| FR-23 | Kotak animasi aliran data di bawah skema | W | Kanvas selebar isi, tiga zona berlabel `internet`/`gerbang`/`perangkat`, satu baris per perangkat |
+| FR-24 | Animasi mewakili arah dan besar pemakaian | W | Titik biru bergerak ke perangkat (turun), titik hijau ke internet (naik); jumlah dan kecepatan titik naik-turun mengikuti laju detik itu; tanpa data, jalur putus-putus tanpa titik |
 
 ## 7. Kebutuhan Non-Fungsional
 
@@ -113,6 +117,7 @@ Prioritas: **W** = wajib, **S** = sebaiknya.
 | NFR-08 | Tidak menampilkan isi trafik, hanya volume dan domain | Tidak ada kolom URL penuh atau data pribadi |
 | NFR-09 | Tetap terbaca pada 1280×720 (proyektor) dan 1512×982 | Tidak ada gulir mendatar; tabel tetap utuh |
 | NFR-10 | Pembaruan tidak mengubah tata letak | Tidak ada lompatan posisi saat angka berubah |
+| NFR-11 | Animasi hemat dan sopan | Maksimum 220 titik di kanvas; bila sistem meminta kurangi gerak (`prefers-reduced-motion`), animasi melambat ke 2 bingkai/detik dan tetap terbaca |
 
 ## 8. Rancangan Tampilan
 
@@ -124,10 +129,13 @@ rambut, huruf judul berkelas serif, angka monospace, satu warna aksen.
 1. **Kepala** — judul, identitas sesi, tombol `Jeda`, tautan `Unduh CSV`.
 2. **Pita peringatan** — hanya muncul saat mode simulasi atau API putus.
 3. **Strip angka kunci** — 4 kolom dipisah garis rambut: turun, naik, waktu sambung, perangkat.
-4. **Grafik laju** — lebar penuh, 180 detik, dua seri.
-5. **Grafik waktu sambung** — lebar penuh, tinggi 1/3 grafik laju.
-6. **Tabel perangkat** — satu baris per perangkat, angka rata kanan.
-7. **Kaki** — metode pengukuran, berkas basis data, versi.
+4. **Skema perangkat** — sumber internet, gerbang ESP32, empat slot perangkat; kabel menyala
+   sesuai keadaan, label MAC/laju/IP di bawah tiap perangkat.
+5. **Kotak animasi aliran data** — di bawah skema; titik paket bergerak dua arah per baris perangkat.
+6. **Grafik laju** — lebar penuh, 180 detik, dua seri.
+7. **Grafik waktu sambung** — lebar penuh, tinggi 1/3 grafik laju.
+8. **Tabel perangkat** — satu baris per perangkat, angka rata kanan.
+9. **Kaki** — metode pengukuran, berkas basis data, versi.
 
 ### 8.2 Palet (terang)
 
@@ -186,9 +194,12 @@ rambut, huruf judul berkelas serif, angka monospace, satu warna aksen.
 | FR-18 | Tombol `Jeda` | Angka berhenti berubah, sesi tetap jalan |
 | FR-19 | Tabel perangkat | Perangkat hilang setelah 30 dtk tanpa data |
 | FR-20 | Kaki halaman | Teks tampil |
+| FR-21, FR-22 | Skema perangkat | Empat slot terisi saat empat telepon aktif; kabel menyala |
+| FR-23, FR-24 | Kotak aliran data | `window.__animasi()` melaporkan jumlah titik dan sebaran kiri–kanan |
 
 ## 12. Riwayat
 
 | Versi | Tanggal | Perubahan |
 |---|---|---|
 | 1.0 | 2026-10-28 | Versi pertama; tema terang menggantikan dashboard gelap awal |
+| 1.1 | 2026-10-28 | Tambah skema perangkat dan kotak animasi aliran data (FR-21…FR-24, NFR-11) |
