@@ -357,7 +357,7 @@ def buat_http(pengumpul: Pengumpul, port: int, simpanan: Simpanan) -> ThreadingH
         server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     except OSError as e:
         if e.errno == 48:
-            naik(f"port {port} sudah dipakai program lain — tutup dulu, atau pakai --http-port {port + 1}")
+            print(f"port {port} sudah dipakai program lain — tutup dulu, atau pakai --http-port {port + 1}")
         raise
     threading.Thread(target=server.serve_forever, daemon=True).start()
     return server
