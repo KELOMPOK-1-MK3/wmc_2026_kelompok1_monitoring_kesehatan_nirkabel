@@ -14,7 +14,15 @@ arduino-cli compile --fqbn esp32:esp32:esp32 --upload -p /dev/cu.usbserial-XXXX 
 
 # 2. Lihat catatan mentah dari kabel USB
 arduino-cli monitor -p /dev/cu.usbserial-XXXX -c baudrate=115200
+
+# 3. Jalankan penerima + dashboard (terminal lain; monitor serial ditutup dulu)
+python3 src/penerima/penerima.py --uji            # cek pengurai, tanpa papan
+python3 src/penerima/penerima.py --port /dev/cu.usbserial-XXXX --sesi S1
 ```
+
+Dashboard: <http://127.0.0.1:8080>. Hasil masuk `data/qos.db`, CSV lewat
+`/api/ekspor.csv`. Port serial hanya boleh dibuka satu program — tutup `arduino-cli
+monitor` sebelum menjalankan penerima, kalau tidak kedua program berebut.
 
 Urutan nyala yang dipakai setiap sesi:
 
@@ -30,13 +38,28 @@ Urutan nyala yang dipakai setiap sesi:
 > pada pengujian 21 Oktober 2026 selisihnya mencapai 36 detik. Angka latency dari
 > simulator tidak boleh masuk laporan.
 
+## Cara Angka Dihitung
+
+| Angka | Sumber |
+|---|---|
+| Byte/paket per perangkat | Bingkai 802.11 data yang tertangkap papan, dijumlahkan per alamat MAC |
+| Retry (%) | Bingkai yang punya bit *retry* dibagi seluruh bingkai perangkat itu — petunjuk packet loss di radio, bukan hitungan paket hilang yang pasti |
+| Laju (kbps) | Selisih angka kumulatif antar laporan, dibagi jarak waktu, dikali 8 |
+| Waktu sambung uplink | Selisih waktu `connect()` TCP papan ke 1.1.1.1:53, diukur tiap 2 detik |
+| Nama domain | Isi pertanyaan DNS biasa dari perangkat; DNS terenkripsi (DoH/DoT) tidak terlihat |
+| Kekuatan sinyal | `esp_wifi_ap_get_sta_list()` dari sisi papan |
+
+Karena dihitung dari bingkai 802.11 (termasuk header radio dan bingkai yang diulang),
+angka byte beberapa persen lebih besar daripada hitungan di sisi perangkat. Hal ini
+wajib disebut saat membandingkan dengan angka dari telepon.
+
 ## Batas Nilai yang Diharapkan
 
 Angka ini ditetapkan sebelum mengukur, sebagai patokan penilaian — bukan hasil.
 
 | Parameter | Batas yang diharapkan |
 |---|---|
-| Latency | di bawah 150 ms |
+| Waktu sambung uplink (pengganti latency) | di bawah 150 ms |
 | Packet loss | di bawah 2 % |
 | Jitter | di bawah 50 ms |
 | Throughput | di atas 800 kbps total |

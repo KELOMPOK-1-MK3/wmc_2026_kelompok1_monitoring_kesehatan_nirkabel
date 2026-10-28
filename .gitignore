@@ -23,3 +23,7 @@ config.local.h
 
 # Keluaran grafik yang dibangkitkan (boleh dibuat ulang dengan --plot)
 docs/grafik/
+
+# hasil sesi penerima
+data/*.db
+data/*.db-journal

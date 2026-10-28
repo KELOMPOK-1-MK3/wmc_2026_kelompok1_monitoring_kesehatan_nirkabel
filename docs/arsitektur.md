@@ -18,7 +18,7 @@
 
 1. Perangkat uji mengirim permintaan (mis. membuka media sosial).
 2. Permintaan masuk ke hotspot ESP32.
-3. ESP32 meneruskannya lewat jalur uplink ke HP-1 dengan NAPT, sambil mencatat: perangkat mana, berapa byte naik dan turun, berapa paket, sambungan aktif, dan nama domain yang ditanyakan lewat DNS.
+3. ESP32 meneruskannya lewat jalur uplink ke HP-1 dengan NAPT, sambil mendengarkan bingkai 802.11 di kanalnya sendiri (mode *promiscuous*, hanya bingkai data) dan menjumlahkan byte serta bingkai per alamat MAC. Dari bingkai yang sama, pertanyaan DNS dibaca untuk mendapatkan nama domain, dan bit *retry* dihitung sebagai petunjuk packet loss di radio.
 4. Catatan itu dikirim ke laptop sebagai baris CSV pendek lewat kabel USB.
 5. Penerima menambah cap waktu terima, menghitung parameter QoS, menyimpan ke SQLite, dan meneruskannya ke dashboard.
 6. ESP32 tidak menyimpan riwayat; kalau kabel dicabut, catatan berhenti. Riwayat hanya ada di laptop.
@@ -44,6 +44,7 @@ ringkasan setiap sesi.
 |---|---|---|
 | Fisik / MAC | IEEE 802.11 b/g/n, pita 2,4 GHz, kanal 6 | Satu radio dipakai untuk dua peran (klien + AP), jadi throughput terbagi |
 | Jaringan | IPv4, NAT/NAPT | `WiFi.AP.enableNAPT(true)` pada ESP32 core 3.x |
+| Pengamatan | Mode promiscuous, filter bingkai data | Hitungan per MAC: byte, bingkai, retry; tanpa mengubah jalur data |
 | Nama | DNS | Hanya nama domain yang terlihat; isi permintaan tidak |
 | Aplikasi | HTTP/HTTPS, QUIC | Isi terenkripsi — tidak dibaca, hanya volumenya yang dihitung |
 | Telemetri | Serial USB (115200 baud), CSV satu arah | Tidak memakai jaringan, tidak memakai broker |
@@ -55,8 +56,21 @@ ringkasan setiap sesi.
 | Berapa byte naik/turun tiap perangkat | Bisa | Dihitung per alamat IP/MAC di ESP32 |
 | Berapa paket dan sambungan aktif tiap perangkat | Bisa | Sama, per alamat |
 | Situs/aplikasi apa yang dibuka | Sebagian | Hanya nama domain dari DNS. Isi HTTPS/QUIC terenkripsi; aplikasi bisa memakai IP langsung atau DNS terenkripsi |
-| Kekuatan sinyal tiap perangkat | Sebagian | RSSI klien AP tidak disediakan API Arduino; diukur lewat cara lain atau dicatat manual |
-| Kecepatan tiap perangkat | Bisa, terbatas | Batas atas ±1–2 Mbps total karena satu radio dan setengah-duplex |
+| Kekuatan sinyal tiap perangkat | Bisa | `esp_wifi_ap_get_sta_list()` memberi RSSI tiap klien yang tersambung |
+| Packet loss sebenarnya | Tidak persis | Yang terukur adalah tingkat bingkai diulang (retry); kehilangan yang tidak terdeteksi radio tidak terlihat |
+| Kecepatan tiap perangkat | Bisa, terbatas | Dihitung per MAC; batas atas ±1–2 Mbps total karena satu radio dan setengah-duplex |
+
+## Format Catatan Serial
+
+| Baris | Isi |
+|---|---|
+| `hb,<ms>,<klien>,<rssi_uplink>,<heap>` | Denyut tiap 1 detik |
+| `st,<mac>,<ip>,<rssi>` | Perangkat yang tersambung, dari daftar klien AP |
+| `tr,<mac>,<ip>,<naik>,<turun>,<bingkai_naik>,<bingkai_turun>,<bingkai_ulang>` | Angka kumulatif per perangkat |
+| `dns,<mac>,<ip>,<nama>` | Satu pertanyaan DNS yang tertangkap |
+| `rtt,<ms>` atau `rtt,-1` | Waktu sambung TCP ke 1.1.1.1:53; `-1` berarti gagal |
+
+Pengali `-1` pada `rtt` ikut dihitung sebagai kegagalan sambung, bukan angka nol.
 
 ## Batas Perangkat Keras
 

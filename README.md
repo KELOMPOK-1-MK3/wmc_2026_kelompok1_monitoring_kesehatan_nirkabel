@@ -52,7 +52,24 @@ Sebelum mengunggah, isi `UPLINK_SSID`, `UPLINK_PASS`, `AP_SSID`, dan `AP_PASS` p
 bagian atas `firmware/esp32-gateway/esp32-gateway.ino`. Sandi asli tidak boleh masuk
 repository.
 
-### 2. Susun urutan pengujian
+### 2. Jalankan penerima dan dashboard di laptop
+
+```bash
+# cek cepat bahwa pengurai dan basis data bekerja (tanpa papan)
+python3 src/penerima/penerima.py --uji
+
+# baca papan sungguhan lewat kabel USB
+python3 src/penerima/penerima.py --port /dev/cu.usbserial-1130 --sesi S1
+
+# uji tampilan tanpa papan (angka tiruan, ditandai SIMULASI di dashboard)
+python3 src/penerima/penerima.py --sim
+```
+
+Dashboard terbuka di <http://127.0.0.1:8080>. Tanpa pustaka luar — cukup Python 3.10+.
+Hasil sesi tersimpan di `data/qos.db` (tabel `sesi`, `trafik`, `dns`, `rtt`);
+unduh CSV lewat <http://127.0.0.1:8080/api/ekspor.csv>.
+
+### 3. Susun urutan pengujian
 
 1. Nyalakan hotspot HP sumber internet pada pita **2,4 GHz** (ESP32 tidak mengenal 5 GHz).
 2. Colok ESP32 ke laptop lewat USB-C, buka monitor serial.
@@ -90,7 +107,10 @@ wmc_2026_kelompok1_monitoring_kesehatan_nirkabel/
 │   ├── rencana-proyek.md
 │   └── diagrams/        # diagram arsitektur
 ├── firmware/
-│   └── esp32-gateway/   # ESP32: klien + hotspot + NAPT + catatan lewat USB serial
+│   └── esp32-gateway/   # ESP32: klien + hotspot + NAPT + hitung per perangkat + USB serial
+├── src/
+│   ├── penerima/        # pembaca USB serial, hitung QoS, simpan SQLite, sajikan dashboard
+│   └── dashboard/       # tampilan (HTML + JS tanpa pustaka)
 ├── arsip/               # kode topik lama (node sensor kesehatan) — disimpan, tidak dipakai
 └── data/                # hasil pengukuran
 ```
@@ -126,20 +146,26 @@ wmc_2026_kelompok1_monitoring_kesehatan_nirkabel/
 | Tahap | Target | Status |
 |---|---|---|
 | Pertemuan 2 | Rencana proyek, proposal, repository | Selesai |
-| Pertemuan 8 (UTS) | ESP32 tersambung ke hotspot, empat perangkat mendapat internet lewat ESP32, catatan `hb`/`ev` terbaca di laptop lewat USB | Firmware mode ganda + NAPT selesai dan lolos kompilasi; pengujian dengan perangkat keras belum |
+| Pertemuan 8 (UTS) | ESP32 tersambung ke hotspot, empat perangkat mendapat internet lewat ESP32, pemakaian per perangkat terbaca di laptop lewat USB | Firmware + penerima + dashboard selesai dan diuji dengan angka tiruan serta port serial tiruan; pengujian dengan papan sungguhan belum |
 | Pertemuan 16 (UAS) | Penghitung pemakaian per perangkat, dashboard, dan hasil pengukuran S1–S5 | Belum dimulai |
 
-Yang **sudah ada**:
+Yang **sudah ada dan sudah dijalankan**:
 
 - `firmware/esp32-gateway` — mode ganda (klien + hotspot), NAPT, sambung ulang otomatis,
-  dan catatan serial `hb`/`ev`. Lolos kompilasi `arduino-cli` (`esp32:esp32` 3.3.12,
-  881.364 byte / 67% ruang program).
+  penghitung byte/bingkai per perangkat dari bingkai 802.11, pencatat nama domain DNS,
+  dan pengukur waktu sambung uplink. Lolos kompilasi `arduino-cli` (`esp32:esp32` 3.3.12,
+  898.152 byte / 68% ruang program). **Belum pernah dijalankan di papan sungguhan.**
+- `src/penerima/penerima.py` — pembaca USB serial tanpa pustaka luar, penghitung laju per
+  perangkat, penyimpan SQLite, dan penyaji dashboard. Diuji dengan `--uji` (lulus), dengan
+  angka tiruan (`--sim`), dan dengan port serial tiruan (pty): 4 baris `tr` menghasilkan
+  laju 773,7 kbps, DNS tercatat, RTT terbaca.
+- `src/dashboard/index.html` — dashboard langsung: KPI, grafik laju, grafik RTT, kartu
+  perangkat berisi pemakaian, retry, kekuatan sinyal, dan nama domain terakhir.
 
-Yang **belum ada** (jangan diklaim selesai):
+Yang **belum** (jangan diklaim selesai):
 
-- Penghitung byte dan paket **per perangkat** serta pembaca nama domain (DNS).
-- Penerima di laptop yang membaca USB serial, menghitung QoS, dan menyimpan ke SQLite.
-- Dashboard.
+- Pengujian dengan papan ESP32 dan telepon sungguhan — termasuk apakah NAPT benar-benar
+  meneruskan internet ke perangkat uji.
 - Seluruh pengukuran S1–S5 — semua angka pada `docs/pengujian.md` masih kosong.
 
 ## Catatan Perubahan Arah Topik
