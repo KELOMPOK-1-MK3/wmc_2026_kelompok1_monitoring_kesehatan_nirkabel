@@ -38,11 +38,27 @@
 #include <WiFi.h>
 #include <esp_wifi.h>
 
-// --- Ubah sesuai kondisi pengujian -------------------------------------------
-static const char *UPLINK_SSID = "HP-1";
-static const char *UPLINK_PASS = "ganti-sandi-disini";
-static const char *AP_SSID = "ESP32-QoS";
-static const char *AP_PASS = "ganti-sandi-disini";
+// --- Kredensial --------------------------------------------------------------
+// Sandi WiFi jangan ditulis di berkas ini (repository publik). Isi
+// firmware/esp32-gateway/rahasia.h — berkas itu masuk .gitignore.
+// Tanpa rahasia.h, papan tetap menyala sebagai hotspot dan mencatat bingkai,
+// hanya saja jalur uplink tidak tersambung (rtt,-1).
+#if __has_include("rahasia.h")
+  #include "rahasia.h"
+#endif
+
+#ifndef UPLINK_SSID
+  #define UPLINK_SSID "HP-1"
+#endif
+#ifndef UPLINK_PASS
+  #define UPLINK_PASS "ganti-sandi-disini"
+#endif
+#ifndef AP_SSID
+  #define AP_SSID "esp32-qos"
+#endif
+#ifndef AP_PASS
+  #define AP_PASS "qos12345"
+#endif
 
 #define BATAS_KLIEN 4      // HP-2..HP-5; softAP bawaan sanggup 4 klien
 #define MAKS_PERANGKAT 8   // ruang tabel (klien + sisa untuk sementara)

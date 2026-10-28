@@ -19,6 +19,7 @@ Thumbs.db
 # Rahasia: sandi WiFi, broker, dan kredensial tidak boleh masuk repository
 .env
 secrets.h
+firmware/esp32-gateway/rahasia.h
 config.local.h
 
 # Keluaran grafik yang dibangkitkan (boleh dibuat ulang dengan --plot)
