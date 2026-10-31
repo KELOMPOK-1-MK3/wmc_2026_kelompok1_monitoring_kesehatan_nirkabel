@@ -258,7 +258,13 @@ void setup() {
   WiFi.mode(WIFI_AP_STA);
   WiFi.softAP(AP_SSID, AP_PASS, 6, 0, BATAS_KLIEN);
   WiFi.AP.enableNAPT(true);
-  memcpy(mac_ap, WiFi.softAPmacAddress().c_str(), 6);
+  // Ambil 6 byte BINER alamat MAC AP. WiFi.softAPmacAddress() tanpa argumen
+  // mengembalikan String "84:1F:E8:27:C6:18", jadi .c_str() + memcpy 6 akan
+  // mengambil karakter ASCII '8','4',':','1','F',':' — bukan alamat MAC.
+  // Akibatnya dari_papan() tidak pernah cocok dan hitung_bingkai() selalu
+  // mengabaikan semua trafik (data per perangkat selalu nol).
+  // Varian dengan argumen filling array 6 byte langsung dengan alamat biner.
+  WiFi.softAPmacAddress(mac_ap);
 
   WiFi.begin(UPLINK_SSID, UPLINK_PASS);
   unsigned long mulai = millis();
