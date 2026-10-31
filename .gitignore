@@ -28,3 +28,10 @@ docs/grafik/
 # hasil sesi penerima
 data/*.db
 data/*.db-journal
+
+# Hasil kompilasi Arduino (folder build/ dibuat otomatis oleh arduino-cli)
+build/
+firmware/*/build/
+
+# Kredensial lokal per Laptop
+rahasia*.h
